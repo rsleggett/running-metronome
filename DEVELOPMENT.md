@@ -112,46 +112,54 @@ hilt = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }
 
 ## Implementation Phases
 
-### Phase 1: Project Setup
-- [ ] Create Android Studio project with Compose template
-- [ ] Configure Gradle with version catalogs
-- [ ] Set up Hilt dependency injection
-- [ ] Create basic project structure
-- [ ] Add audio files to res/raw/
+### Phase 1: Project Setup ✅ COMPLETE
+- [x] Create Android Studio project with Compose template
+- [x] Configure Gradle with version catalogs
+- [x] Set up Hilt dependency injection
+- [x] Create basic project structure
+- [x] Add audio files to res/raw/ (6 sounds)
 
-### Phase 2: Data Layer
-- [ ] Create Settings data model (BPM, volume, sound type)
-- [ ] Implement DataStore for preferences
-- [ ] Create SettingsRepository
+### Phase 2: Data Layer ✅ PARTIAL
+- [x] Create Settings data model (BPM, volume, sound type, audio usage type)
+- [ ] Implement DataStore for preferences (not yet implemented - using defaults)
+- [ ] Create SettingsRepository (not yet implemented)
 
-### Phase 3: Audio Engine
-- [ ] Implement MetronomePlayer class using MediaPlayer/AudioTrack
-- [ ] Support for loading different sound files
-- [ ] Independent volume control implementation
-- [ ] BPM-based timing logic with coroutines
+### Phase 3: Audio Engine ✅ COMPLETE
+- [x] Implement MetronomeAudioPlayer class using SoundPool
+- [x] Support for loading different sound files (6 sounds)
+- [x] Independent volume control implementation (0-100%)
+- [x] BPM-based timing logic with coroutines (40-200 BPM)
+- [x] Switchable audio usage types (Media/Notification)
+- [x] Debug logging for troubleshooting
 
-### Phase 4: Background Service
-- [ ] Create Foreground Service for background playback
-- [ ] Implement notification controls
-- [ ] Handle audio focus (duck music when metronome plays)
+### Phase 4: Background Service ✅ COMPLETE
+- [x] Create Foreground Service for background playback
+- [x] Implement notification controls (Play/Pause/Stop)
+- [x] Audio mixing with other apps (doesn't duck music)
+- [x] MediaStyle notification with controls
+- [x] Service binding and lifecycle management
 
-### Phase 5: UI Development
-- [ ] Design Material 3 theme
-- [ ] Build main screen UI with Compose:
-  - BPM slider/picker
-  - Volume control
-  - Sound selector
-  - Play/Pause button
-- [ ] Implement ViewModel with StateFlow
-- [ ] Connect UI to audio engine
+### Phase 5: UI Development ✅ COMPLETE
+- [x] Design Material 3 theme
+- [x] Build main screen UI with Compose:
+  - [x] BPM slider with large numeric display
+  - [x] Volume control slider with percentage
+  - [x] Sound selector (6 sounds via FilterChips)
+  - [x] Audio mode selector (Media/Notification)
+  - [x] Large Play/Pause FAB
+  - [x] Scrollable layout for all screen sizes
+- [x] Implement ViewModel with StateFlow
+- [x] Connect UI to audio engine via service
 
-### Phase 6: Testing & Polish
+### Phase 6: Testing & Polish 🔄 IN PROGRESS
 - [ ] Unit tests for ViewModel and use cases
 - [ ] UI tests with Compose Testing
-- [ ] Test background playback scenarios
-- [ ] Test with actual music/podcast apps
-- [ ] Icon and launcher setup
+- [x] Test background playback scenarios (tested on real device)
+- [x] Test with actual music/podcast apps (verified mixing works)
+- [ ] Icon and launcher setup (using default icons)
 - [ ] Performance optimization
+- [ ] Runtime notification permissions for Android 13+
+- [ ] Settings persistence with DataStore
 
 ## Key Technical Considerations
 
@@ -160,20 +168,25 @@ hilt = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }
 - Request `FOREGROUND_SERVICE` permission
 - Handle audio focus to mix with other apps (not duck completely)
 
-### Volume Control
-- Use separate audio stream (USAGE_ASSISTANCE_SONIFICATION or custom)
-- Don't use STREAM_MUSIC (conflicts with media apps)
-- Implement app-level volume control
+### Volume Control ✅ IMPLEMENTED
+- Two audio modes selectable by user:
+  - **Media mode** (default): Uses `USAGE_MEDIA` - always plays, uses media volume, works on vibrate/silent
+  - **Notification mode**: Uses `USAGE_ASSISTANCE_SONIFICATION` - respects mute switch, uses notification volume
+- App-level volume control (0-100%) independent of system volume
+- Volume changes apply immediately during playback
 
-### BPM Timing
-- Use coroutines with delay for precise timing
-- Consider using ScheduledExecutorService for more precise timing
-- Account for audio latency
+### BPM Timing ✅ IMPLEMENTED
+- Coroutines with delay for timing: `60000ms / BPM`
+- Runs in `Dispatchers.Default` for background execution
+- Adequate precision for running cadence (tested 40-200 BPM)
+- SoundPool handles audio latency automatically
+- Future: Consider ScheduledExecutorService if sub-millisecond precision needed
 
-### Battery Optimization
-- Efficient service lifecycle management
-- Wake locks only when necessary
-- Optimize timer precision vs battery trade-off
+### Battery Optimization ✅ IMPLEMENTED
+- Efficient service lifecycle: starts/stops with playback
+- No wake locks used
+- Coroutine-based timing is battery efficient
+- Service persists only during active playback
 
 ## Design Guidelines
 
@@ -210,9 +223,61 @@ hilt = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }
 # Run tests
 ./gradlew test
 
-# Install on connected device
+# Install on connected device (specify device if multiple)
 ./gradlew installDebug
+ANDROID_SERIAL=<device-id> ./gradlew installDebug
 
 # Generate APK
 ./gradlew assembleRelease
+
+# Clean build
+./gradlew clean
+
+# Check connected devices
+adb devices
 ```
+
+## Testing Notes
+
+### Real Device Testing
+The app has been tested on real devices (OnePlus CPH2609, Android 15) and emulators (Pixel Fold API 35).
+
+**Important**: On real devices with hardware mute switches:
+- **Media mode** (recommended for running): Plays even when phone is on vibrate/silent
+- **Notification mode**: Respects hardware mute switch - will be silent on vibrate
+
+### Audio Mixing
+Verified to work alongside:
+- Spotify
+- YouTube Music
+- Podcast apps
+- Other media players
+
+The metronome mixes with music without ducking or interrupting playback.
+
+### Background Playback
+Tested scenarios:
+- App minimized while playing
+- Screen off while playing
+- Switching between apps
+- Using notification controls
+- Phone calls (needs further testing)
+
+## Recent Session Progress (Session Date: 2025-11-16)
+
+### Features Added
+1. **Sound Selector**: Added UI to choose between 6 different metronome sounds
+2. **Audio Mode Selector**: User can switch between Media and Notification audio modes
+3. **Background Service**: Complete foreground service implementation with notification controls
+4. **Scrollable UI**: Fixed layout issues to ensure all controls are accessible
+5. **Debug Logging**: Added comprehensive logging for troubleshooting
+
+### Bugs Fixed
+1. Fixed sound not playing on real devices (mute switch issue - solved with Media mode)
+2. Fixed UI layout cutting off play button (made screen scrollable)
+3. Fixed enum typo (metronomdrum → metronomedrum)
+
+### Infrastructure
+1. Updated `.gitignore` files (root and project level) to exclude build files, IDE files, etc.
+2. Added 5 additional metronome sounds (total 6 sounds)
+3. Added androidx.media dependency for MediaStyle notifications

@@ -52,10 +52,10 @@ ui/            # Presentation layer
   theme/       # Material Design 3 theme
 
 audio/         # Audio playback logic
-  MetronomeAudioPlayer.kt - Core audio engine using AudioTrack
+  MetronomeAudioPlayer.kt - Core audio engine using SoundPool
 
-service/       # Background services (planned)
-  - Foreground service for background playback
+service/       # Background services
+  MetronomeService.kt - Foreground service for background playback
 
 di/            # Hilt dependency injection modules
   AppModule.kt - Singleton providers
@@ -68,15 +68,17 @@ di/            # Hilt dependency injection modules
 3. **Jetpack Compose**: Full Compose UI (no XML layouts)
 4. **Material 3**: Using Material Design 3 components and theming
 
-## Audio Implementation Requirements
+## Audio Implementation
 
-The metronome must play **alongside other audio** (music/podcasts) without ducking or interrupting:
+The metronome plays **alongside other audio** (music/podcasts) without ducking or interrupting:
 
-- Use `AudioTrack` for precise timing control
-- Use audio stream type that doesn't conflict with `STREAM_MUSIC`
-- Implement app-level volume control (not system volume)
-- Use Kotlin coroutines with delay for BPM-based timing
-- Account for audio latency in timing calculations
+- Uses `SoundPool` for low-latency playback
+- Two audio modes selectable by user:
+  - **Media mode**: Uses `USAGE_MEDIA` - always plays, uses media volume
+  - **Notification mode**: Uses `USAGE_ASSISTANCE_SONIFICATION` - respects mute switch, uses notification volume
+- App-level volume control (0-100%)
+- Kotlin coroutines with delay for BPM-based timing (60000ms / BPM)
+- SoundPool handles audio latency automatically
 
 ## Background Playback Requirements
 
@@ -97,29 +99,56 @@ User preferences (BPM, volume, sound type) should persist using:
 
 ## Sound Files
 
-Three metronome sounds in `app/src/main/res/raw/`:
-- `metronomeclick.mp3` (MVP - currently implemented)
-- `metronomedrum.mp3` (planned)
-- `metronomeclassic.mp3` (planned)
+Six metronome sounds in `app/src/main/res/raw/`:
+- `metronomeclick.mp3` - Classic metronome click
+- `metronomesnare.mp3` - Snare drum sound
+- `metronomeknock.mp3` - Knock/wood block sound
+- `metronomedrumtr707.mp3` - TR-707 drum sound
+- `metronomedrumtr808.mp3` - TR-808 drum sound
+- `metronomedrumtr909.mp3` - TR-909 drum sound
 
-Access via resource ID: `R.raw.metronomeclick`
+Access via resource ID: `R.raw.metronomeclick`, etc.
+User can switch between sounds via FilterChip selector in UI.
 
 ## Current Implementation Status
 
-**Phase**: Early development - basic structure in place
+**Phase**: Core functionality complete - MVP ready for testing
 
-Implemented:
-- Hilt setup with `@HiltAndroidApp` on `MetronomeApplication`
-- Basic Compose UI scaffolding in `MainActivity`
-- `SettingsModel` with BPM (40-200), volume (0-100), and sound enum
-- Empty `MetronomeAudioPlayer` class skeleton
+### ✅ Implemented:
+- **Hilt DI**: Complete setup with `@HiltAndroidApp` and `@AndroidEntryPoint`
+- **Audio Playback**: Full `MetronomeAudioPlayer` implementation with SoundPool
+  - Support for all 6 sound types
+  - Switchable audio modes (Media/Notification)
+  - Volume control (0-100%)
+  - BPM range: 40-200
+  - Debug logging for troubleshooting
+- **Background Service**: `MetronomeService` foreground service
+  - Persistent notification with Play/Pause/Stop controls
+  - Continues playing when app is minimized
+  - Works with screen off
+  - MediaStyle notification
+- **UI**: Complete Material 3 Compose interface
+  - BPM slider with large display (40-200 range)
+  - Volume slider with percentage display
+  - Sound selector (6 sounds via FilterChips)
+  - Audio mode selector (Media/Notification)
+  - Large Play/Pause FAB
+  - Scrollable layout
+- **MVVM**: Full architecture implementation
+  - `MetronomeViewModel` with StateFlow
+  - Service binding and lifecycle management
+  - Proper state management
+- **Permissions**: All required permissions in manifest
+  - `FOREGROUND_SERVICE`
+  - `FOREGROUND_SERVICE_MEDIA_PLAYBACK`
+  - `POST_NOTIFICATIONS`
 
-Not yet implemented:
-- DataStore repository for settings persistence
-- Audio playback logic in `MetronomeAudioPlayer`
-- Background service for persistent playback
-- Complete UI with proper BPM/volume controls
-- ViewModels and proper MVVM structure
+### 🔄 Not Yet Implemented:
+- DataStore repository for settings persistence (currently defaults on restart)
+- Runtime notification permission request for Android 13+
+- Unit tests
+- UI tests
+- Release build configuration
 
 ## Development Notes
 
@@ -135,9 +164,16 @@ Not yet implemented:
 - Compose UI testing available via `androidx.compose.ui.test.junit4`
 
 ### BPM Timing Precision
-Consider using `ScheduledExecutorService` instead of coroutine delays for more precise metronome timing if accuracy issues arise. Trade-off between battery optimization and timing precision.
+Currently using Kotlin coroutines with `delay()` for timing (60000ms / BPM).
+If more precise timing needed, consider `ScheduledExecutorService`. Current implementation provides adequate precision for running cadence.
 
 ### Battery Optimization
-- Efficient service lifecycle management required
-- Wake locks only when necessary
-- Balance timer precision vs battery consumption
+- Service automatically starts/stops with playback
+- No wake locks used
+- Coroutine-based timing is battery efficient
+- SoundPool provides low-latency playback without continuous CPU usage
+
+### Known Issues & Solutions
+- **Mute Switch**: On real devices, notification mode respects hardware mute switch. Use Media mode for running to ensure sound plays even when phone is on vibrate.
+- **Sound Loading**: SoundPool loads sounds asynchronously. OnLoadCompleteListener confirms loading before playback.
+- **Service Lifecycle**: Service binds on MainActivity onCreate and unbinds on destroy. Service persists when app is minimized.
