@@ -6,8 +6,11 @@ import android.media.SoundPool
 import android.util.Log
 import kotlinx.coroutines.*
 import com.electricbiro.runningmetronome.R
+import com.electricbiro.runningmetronome.data.model.AccentPattern
 import com.electricbiro.runningmetronome.data.model.AudioUsageType
+import com.electricbiro.runningmetronome.data.model.DrumPattern
 import com.electricbiro.runningmetronome.data.model.MetronomeSoundEnum
+import com.electricbiro.runningmetronome.data.model.PlaybackMode
 
 /**
  * Metronome audio player that plays click sounds at precise BPM intervals.
@@ -16,7 +19,7 @@ import com.electricbiro.runningmetronome.data.model.MetronomeSoundEnum
 class MetronomeAudioPlayer(private val context: Context) {
 
     private var soundPool: SoundPool? = null
-    private var clickSoundId: Int = 0
+    private val soundIdMap = mutableMapOf<MetronomeSoundEnum, Int>()
     private var isPlaying = false
     private var playbackJob: Job? = null
 
@@ -24,9 +27,14 @@ class MetronomeAudioPlayer(private val context: Context) {
     private var currentBpm: Int = 175
     private var currentVolume: Float = 0.75f // 0.0 to 1.0
     private var currentAudioUsageType: AudioUsageType = AudioUsageType.MEDIA
+    private var currentMode: PlaybackMode = PlaybackMode.SIMPLE
+    private var currentAccentPattern: AccentPattern = AccentPattern.NONE
+    private var currentDrumPattern: DrumPattern = DrumPattern()
+    private var beatCounter: Int = 0
 
     companion object {
         private const val TAG = "MetronomeAudioPlayer"
+        private const val ACCENT_VOLUME_MULTIPLIER = 1.3f
     }
 
     init {
@@ -61,24 +69,41 @@ class MetronomeAudioPlayer(private val context: Context) {
             Log.d(TAG, "Sound load complete: sampleId=$sampleId, status=$status")
         }
 
-        // Load the default click sound
-        loadSound(R.raw.metronomeclick)
+        // Load the default sounds
+        loadSound(MetronomeSoundEnum.CLASSIC)
+        loadSound(MetronomeSoundEnum.SNARE)
     }
 
     /**
      * Load a sound from resources.
-     * @param resourceId The R.raw.* resource ID of the sound file
+     * @param sound The sound enum to load
      */
-    fun loadSound(resourceId: Int) {
-        Log.d(TAG, "Loading sound: resourceId=$resourceId")
+    private fun loadSound(sound: MetronomeSoundEnum) {
+        val resourceId = when (sound) {
+            MetronomeSoundEnum.CLASSIC -> R.raw.metronomeclick
+            MetronomeSoundEnum.SNARE -> R.raw.metronomesnare
+            MetronomeSoundEnum.DRUMTR707 -> R.raw.metronomedrumtr707
+            MetronomeSoundEnum.DRUMTR808 -> R.raw.metronomedrumtr808
+            MetronomeSoundEnum.DRUMTR909 -> R.raw.metronomedrumtr909
+            MetronomeSoundEnum.KNOCK -> R.raw.metronomeknock
+        }
+
+        Log.d(TAG, "Loading sound: $sound resourceId=$resourceId")
         soundPool?.let { pool ->
-            // Unload previous sound if exists
-            if (clickSoundId != 0) {
-                Log.d(TAG, "Unloading previous sound: $clickSoundId")
-                pool.unload(clickSoundId)
+            if (!soundIdMap.containsKey(sound)) {
+                val soundId = pool.load(context, resourceId, 1)
+                soundIdMap[sound] = soundId
+                Log.d(TAG, "Loaded $sound with ID: $soundId")
             }
-            clickSoundId = pool.load(context, resourceId, 1)
-            Log.d(TAG, "New sound ID: $clickSoundId")
+        }
+    }
+
+    /**
+     * Preload all sounds for pattern mode
+     */
+    private fun preloadAllSounds() {
+        MetronomeSoundEnum.entries.forEach { sound ->
+            loadSound(sound)
         }
     }
 
@@ -86,38 +111,86 @@ class MetronomeAudioPlayer(private val context: Context) {
      * Start playing the metronome with the current BPM setting.
      */
     fun play() {
-        Log.d(TAG, "play() called, isPlaying=$isPlaying, soundId=$clickSoundId, volume=$currentVolume, bpm=$currentBpm")
+        Log.d(TAG, "play() called, isPlaying=$isPlaying, volume=$currentVolume, bpm=$currentBpm, mode=$currentMode")
         if (isPlaying) return
         isPlaying = true
+        beatCounter = 0
+
+        // Preload sounds if in pattern mode
+        if (currentMode == PlaybackMode.PATTERN) {
+            preloadAllSounds()
+        }
 
         // Launch coroutine for precise timing
         playbackJob = CoroutineScope(Dispatchers.Default).launch {
             Log.d(TAG, "Playback coroutine started")
-            while (isActive && isPlaying) {
-                playClick()
 
-                // Calculate delay based on BPM (beats per minute)
-                // 60000 ms in a minute / BPM = milliseconds per beat
-                val intervalMs = (60000.0 / currentBpm).toLong()
+            // Calculate delay based on BPM (beats per minute)
+            // 60000 ms in a minute / BPM = milliseconds per beat
+            val intervalMs = (60000.0 / currentBpm).toLong()
+
+            while (isActive && isPlaying) {
+                when (currentMode) {
+                    PlaybackMode.SIMPLE -> playSimpleBeat()
+                    PlaybackMode.PATTERN -> playPatternStep()
+                }
+
                 delay(intervalMs)
+                beatCounter++
             }
             Log.d(TAG, "Playback coroutine ended")
         }
     }
 
     /**
-     * Play a single click sound.
+     * Play a beat in simple mode with optional accent
      */
-    private fun playClick() {
+    private fun playSimpleBeat() {
+        val isAccented = when (currentAccentPattern) {
+            AccentPattern.NONE -> false
+            AccentPattern.EVERY_2ND -> beatCounter % 2 == 0
+            AccentPattern.EVERY_3RD -> beatCounter % 3 == 0
+            AccentPattern.EVERY_4TH -> beatCounter % 4 == 0
+        }
+
+        val volume = if (isAccented) {
+            (currentVolume * ACCENT_VOLUME_MULTIPLIER).coerceAtMost(1.0f)
+        } else {
+            currentVolume
+        }
+
+        // In simple mode, use the first sound in the pattern
+        val sound = currentDrumPattern.sound1
+        playSoundWithVolume(sound, volume)
+    }
+
+    /**
+     * Play the current step in pattern mode
+     */
+    private fun playPatternStep() {
+        val stepIndex = beatCounter % 8
+        val step = currentDrumPattern.steps[stepIndex]
+
+        step.sound?.let { sound ->
+            val volume = currentVolume * step.volume
+            playSoundWithVolume(sound, volume)
+        }
+        // If sound is null, it's a rest - do nothing
+    }
+
+    /**
+     * Play a specific sound at a specific volume
+     */
+    private fun playSoundWithVolume(sound: MetronomeSoundEnum, volume: Float) {
         soundPool?.let { pool ->
-            if (clickSoundId != 0) {
-                // Play sound: soundID, leftVolume, rightVolume, priority, loop, rate
-                val streamId = pool.play(clickSoundId, currentVolume, currentVolume, 1, 0, 1.0f)
-                Log.d(TAG, "playClick: soundId=$clickSoundId, volume=$currentVolume, streamId=$streamId")
+            val soundId = soundIdMap[sound]
+            if (soundId != null && soundId != 0) {
+                val streamId = pool.play(soundId, volume, volume, 1, 0, 1.0f)
+                Log.d(TAG, "playSound: sound=$sound, soundId=$soundId, volume=$volume, streamId=$streamId")
             } else {
-                Log.w(TAG, "playClick: clickSoundId is 0, sound not loaded yet")
+                Log.w(TAG, "playSound: sound $sound not loaded yet")
             }
-        } ?: Log.e(TAG, "playClick: soundPool is null")
+        } ?: Log.e(TAG, "playSound: soundPool is null")
     }
 
     /**
@@ -159,20 +232,50 @@ class MetronomeAudioPlayer(private val context: Context) {
     }
 
     /**
-     * Change the metronome sound.
+     * Change the metronome sound (for simple mode).
      * @param sound The sound enum to use
      */
     fun setSound(sound: MetronomeSoundEnum) {
+        Log.d(TAG, "setSound: $sound")
+        loadSound(sound)
+        // Update the current pattern's sound1
+        currentDrumPattern = currentDrumPattern.copy(sound1 = sound)
+    }
 
-        val resourceId = when (sound) {
-            MetronomeSoundEnum.CLASSIC -> R.raw.metronomeclick
-            MetronomeSoundEnum.SNARE -> R.raw.metronomesnare
-            MetronomeSoundEnum.DRUMTR707 -> R.raw.metronomedrumtr707
-            MetronomeSoundEnum.DRUMTR808 -> R.raw.metronomedrumtr808
-            MetronomeSoundEnum.DRUMTR909 -> R.raw.metronomedrumtr909
-            MetronomeSoundEnum.KNOCK -> R.raw.metronomeknock
+    /**
+     * Set the playback mode
+     */
+    fun setPlaybackMode(mode: PlaybackMode) {
+        Log.d(TAG, "setPlaybackMode: $mode")
+        if (currentMode != mode) {
+            val wasPlaying = isPlaying
+            if (wasPlaying) {
+                pause()
+            }
+            currentMode = mode
+            beatCounter = 0
+            if (wasPlaying) {
+                play()
+            }
         }
-        loadSound(resourceId)
+    }
+
+    /**
+     * Set the accent pattern (for simple mode)
+     */
+    fun setAccentPattern(pattern: AccentPattern) {
+        Log.d(TAG, "setAccentPattern: $pattern")
+        currentAccentPattern = pattern
+        beatCounter = 0  // Reset to start accent pattern from beginning
+    }
+
+    /**
+     * Set the drum pattern (for pattern mode)
+     */
+    fun setDrumPattern(pattern: DrumPattern) {
+        Log.d(TAG, "setDrumPattern: steps=${pattern.steps.size}")
+        currentDrumPattern = pattern
+        beatCounter = 0  // Reset to start pattern from beginning
     }
 
     /**
@@ -193,7 +296,7 @@ class MetronomeAudioPlayer(private val context: Context) {
         // Release old SoundPool
         soundPool?.release()
         soundPool = null
-        clickSoundId = 0
+        soundIdMap.clear()
 
         // Create new SoundPool with new usage type
         currentAudioUsageType = usageType
@@ -212,6 +315,6 @@ class MetronomeAudioPlayer(private val context: Context) {
         stop()
         soundPool?.release()
         soundPool = null
-        clickSoundId = 0
+        soundIdMap.clear()
     }
 }

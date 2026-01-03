@@ -26,8 +26,12 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.electricbiro.runningmetronome.data.model.AccentPattern
 import com.electricbiro.runningmetronome.data.model.AudioUsageType
+import com.electricbiro.runningmetronome.data.model.DrumPattern
 import com.electricbiro.runningmetronome.data.model.MetronomeSoundEnum
+import com.electricbiro.runningmetronome.data.model.PatternStep
+import com.electricbiro.runningmetronome.data.model.PlaybackMode
 import com.electricbiro.runningmetronome.service.MetronomeService
 import com.electricbiro.runningmetronome.ui.theme.RunningMetronomeTheme
 import com.electricbiro.runningmetronome.ui.viewmodel.MetronomeViewModel
@@ -107,7 +111,28 @@ fun MetronomeScreen(
                 fontWeight = FontWeight.Bold
             )
 
-            Spacer(modifier = Modifier.height(48.dp))
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // Mode Toggle
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                FilterChip(
+                    selected = uiState.playbackMode == PlaybackMode.SIMPLE,
+                    onClick = { viewModel.setPlaybackMode(PlaybackMode.SIMPLE) },
+                    label = { Text("Simple") },
+                    modifier = Modifier.weight(1f)
+                )
+                FilterChip(
+                    selected = uiState.playbackMode == PlaybackMode.PATTERN,
+                    onClick = { viewModel.setPlaybackMode(PlaybackMode.PATTERN) },
+                    label = { Text("Pattern") },
+                    modifier = Modifier.weight(1f)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
 
             // BPM Display
             Text(
@@ -144,6 +169,21 @@ fun MetronomeScreen(
                 Text("200", style = MaterialTheme.typography.bodySmall)
             }
 
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Preset BPM Chips
+            Text(
+                text = "Quick Presets",
+                style = MaterialTheme.typography.titleSmall,
+                modifier = Modifier.align(Alignment.Start)
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            BpmPresetChips(
+                currentBpm = uiState.bpm,
+                onBpmSelected = { viewModel.setBpm(it.toFloat()) },
+                modifier = Modifier.fillMaxWidth()
+            )
+
             Spacer(modifier = Modifier.height(32.dp))
 
             // Volume Slider
@@ -161,18 +201,46 @@ fun MetronomeScreen(
 
             Spacer(modifier = Modifier.height(32.dp))
 
-            // Sound Selector
-            Text(
-                text = "Sound",
-                style = MaterialTheme.typography.titleSmall,
-                modifier = Modifier.align(Alignment.Start)
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            SoundSelector(
-                selectedSound = uiState.sound,
-                onSoundSelected = { viewModel.setSound(it) },
-                modifier = Modifier.fillMaxWidth()
-            )
+            // Mode-specific content
+            when (uiState.playbackMode) {
+                PlaybackMode.SIMPLE -> {
+                    // Sound Selector (Simple Mode)
+                    Text(
+                        text = "Sound",
+                        style = MaterialTheme.typography.titleSmall,
+                        modifier = Modifier.align(Alignment.Start)
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    SoundSelector(
+                        selectedSound = uiState.sound,
+                        onSoundSelected = { viewModel.setSound(it) },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    // Accent Pattern Selector
+                    Text(
+                        text = "Accent Pattern",
+                        style = MaterialTheme.typography.titleSmall,
+                        modifier = Modifier.align(Alignment.Start)
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    AccentPatternSelector(
+                        selectedPattern = uiState.accentPattern,
+                        onPatternSelected = { viewModel.setAccentPattern(it) },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+                PlaybackMode.PATTERN -> {
+                    // Pattern Editor
+                    PatternEditor(
+                        pattern = uiState.drumPattern,
+                        onPatternChanged = { viewModel.setDrumPattern(it) },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            }
 
             Spacer(modifier = Modifier.height(24.dp))
 
@@ -278,6 +346,198 @@ fun AudioUsageTypeSelector(
             if (type != AudioUsageType.entries.last()) {
                 Spacer(modifier = Modifier.height(8.dp))
             }
+        }
+    }
+}
+
+@Composable
+fun BpmPresetChips(
+    currentBpm: Int,
+    onBpmSelected: (Int) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val presets = listOf(160, 170, 175, 180, 185)
+
+    Row(
+        modifier = modifier,
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        presets.forEach { bpm ->
+            FilterChip(
+                selected = currentBpm == bpm,
+                onClick = { onBpmSelected(bpm) },
+                label = {
+                    Text(text = "$bpm")
+                },
+                modifier = Modifier.weight(1f)
+            )
+        }
+    }
+}
+
+@Composable
+fun AccentPatternSelector(
+    selectedPattern: AccentPattern,
+    onPatternSelected: (AccentPattern) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier,
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        AccentPattern.entries.forEach { pattern ->
+            FilterChip(
+                selected = selectedPattern == pattern,
+                onClick = { onPatternSelected(pattern) },
+                label = { Text(pattern.displayName) },
+                modifier = Modifier.weight(1f)
+            )
+        }
+    }
+}
+
+@Composable
+fun PatternEditor(
+    pattern: DrumPattern,
+    onPatternChanged: (DrumPattern) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(modifier = modifier) {
+        // Sound selection for the pattern
+        Text(
+            text = "Pattern Sounds",
+            style = MaterialTheme.typography.titleSmall
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text("Sound 1", style = MaterialTheme.typography.labelSmall)
+                SoundSelector(
+                    selectedSound = pattern.sound1,
+                    onSoundSelected = { onPatternChanged(pattern.copy(sound1 = it)) },
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+            Column(modifier = Modifier.weight(1f)) {
+                Text("Sound 2", style = MaterialTheme.typography.labelSmall)
+                SoundSelector(
+                    selectedSound = pattern.sound2,
+                    onSoundSelected = { onPatternChanged(pattern.copy(sound2 = it)) },
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // 8-step sequencer
+        Text(
+            text = "Pattern Steps (8-step)",
+            style = MaterialTheme.typography.titleSmall
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // Two rows of 4 steps
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                for (i in 0..3) {
+                    PatternStepButton(
+                        stepIndex = i,
+                        step = pattern.steps[i],
+                        sound1 = pattern.sound1,
+                        sound2 = pattern.sound2,
+                        onStepChanged = { newStep ->
+                            val newSteps = pattern.steps.toMutableList()
+                            newSteps[i] = newStep
+                            onPatternChanged(pattern.copy(steps = newSteps))
+                        },
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+            }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                for (i in 4..7) {
+                    PatternStepButton(
+                        stepIndex = i,
+                        step = pattern.steps[i],
+                        sound1 = pattern.sound1,
+                        sound2 = pattern.sound2,
+                        onStepChanged = { newStep ->
+                            val newSteps = pattern.steps.toMutableList()
+                            newSteps[i] = newStep
+                            onPatternChanged(pattern.copy(steps = newSteps))
+                        },
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun PatternStepButton(
+    stepIndex: Int,
+    step: PatternStep,
+    sound1: MetronomeSoundEnum,
+    sound2: MetronomeSoundEnum,
+    onStepChanged: (PatternStep) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val currentState = when (step.sound) {
+        null -> 0  // Rest
+        sound1 -> 1  // Sound 1
+        sound2 -> 2  // Sound 2
+        else -> 0
+    }
+
+    Column(
+        modifier = modifier,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(
+            text = "${stepIndex + 1}",
+            style = MaterialTheme.typography.labelSmall
+        )
+        OutlinedButton(
+            onClick = {
+                // Cycle through: Rest -> Sound1 -> Sound2 -> Rest
+                val newStep = when (currentState) {
+                    0 -> PatternStep(sound1, 1.0f)
+                    1 -> PatternStep(sound2, 1.0f)
+                    else -> PatternStep(null, 1.0f)
+                }
+                onStepChanged(newStep)
+            },
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(56.dp),
+            colors = ButtonDefaults.outlinedButtonColors(
+                containerColor = when (currentState) {
+                    0 -> MaterialTheme.colorScheme.surface
+                    1 -> MaterialTheme.colorScheme.primaryContainer
+                    else -> MaterialTheme.colorScheme.secondaryContainer
+                }
+            )
+        ) {
+            Text(
+                text = when (currentState) {
+                    0 -> "–"
+                    1 -> "1"
+                    else -> "2"
+                },
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Bold
+            )
         }
     }
 }

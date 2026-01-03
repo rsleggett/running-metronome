@@ -1,8 +1,11 @@
 package com.electricbiro.runningmetronome.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
+import com.electricbiro.runningmetronome.data.model.AccentPattern
 import com.electricbiro.runningmetronome.data.model.AudioUsageType
+import com.electricbiro.runningmetronome.data.model.DrumPattern
 import com.electricbiro.runningmetronome.data.model.MetronomeSoundEnum
+import com.electricbiro.runningmetronome.data.model.PlaybackMode
 import com.electricbiro.runningmetronome.service.MetronomeService
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -19,7 +22,10 @@ data class MetronomeUiState(
     val bpm: Int = 175,
     val volume: Int = 75,
     val sound: MetronomeSoundEnum = MetronomeSoundEnum.CLASSIC,
-    val audioUsageType: AudioUsageType = AudioUsageType.MEDIA
+    val audioUsageType: AudioUsageType = AudioUsageType.MEDIA,
+    val playbackMode: PlaybackMode = PlaybackMode.SIMPLE,
+    val accentPattern: AccentPattern = AccentPattern.NONE,
+    val drumPattern: DrumPattern = DrumPattern()
 )
 
 /**
@@ -100,5 +106,29 @@ class MetronomeViewModel @Inject constructor() : ViewModel() {
     fun setAudioUsageType(usageType: AudioUsageType) {
         service?.setAudioUsageType(usageType)
         _uiState.update { it.copy(audioUsageType = usageType) }
+    }
+
+    /**
+     * Change the playback mode
+     */
+    fun setPlaybackMode(mode: PlaybackMode) {
+        service?.setPlaybackMode(mode)
+        _uiState.update { it.copy(playbackMode = mode) }
+    }
+
+    /**
+     * Change the accent pattern
+     */
+    fun setAccentPattern(pattern: AccentPattern) {
+        service?.setAccentPattern(pattern)
+        _uiState.update { it.copy(accentPattern = pattern) }
+    }
+
+    /**
+     * Update the drum pattern
+     */
+    fun setDrumPattern(pattern: DrumPattern) {
+        service?.setDrumPattern(pattern)
+        _uiState.update { it.copy(drumPattern = pattern) }
     }
 }
