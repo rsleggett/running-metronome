@@ -162,58 +162,62 @@ User can switch between sounds via FilterChip selector in UI.
 
 ### ✅ Implemented:
 - **Hilt DI**: Complete setup with `@HiltAndroidApp` and `@AndroidEntryPoint`
-- **Audio Playback**: Full `MetronomeAudioPlayer` implementation with SoundPool
+- **Audio Playback**: Simplified `MetronomeAudioPlayer` implementation with SoundPool
   - Support for all 6 sound types
   - Switchable audio modes (Media/Notification)
   - Volume control (0-100%)
   - BPM range: 40-200
-  - **Simple mode**: Basic metronome with optional accent patterns
-  - **Pattern mode**: 8-step drum sequencer with configurable sounds
+  - Simple metronome with optional accent patterns
   - Debug logging for troubleshooting
-- **Playback Modes**:
-  - **Simple Mode**: Standard metronome with accent patterns (None, Every 2nd, Every 3rd, Every 4th)
-  - **Pattern Mode**: 8-step drum pattern sequencer with two sounds and rest steps
+- **Accent Patterns**: Standard metronome with accent patterns
+  - None, Every 2nd, Every 3rd, Every 4th
 - **Background Service**: `MetronomeService` foreground service
   - Persistent notification with Play/Pause/Stop controls
   - Continues playing when app is minimized
   - Works with screen off
   - MediaStyle notification
-- **UI**: Complete Material 3 Compose interface
+- **UI**: Simplified Material 3 Compose interface
   - BPM slider with large display (40-200 range)
   - BPM quick presets (160, 170, 175, 180, 185)
   - Volume slider with percentage display
   - Sound selector (6 sounds via FilterChips)
   - Audio mode selector (Media/Notification)
-  - Mode toggle (Simple/Pattern)
-  - Accent pattern selector (Simple mode)
-  - 8-step pattern editor (Pattern mode)
+  - Accent pattern selector
   - Large Play/Pause FAB
   - Scrollable layout
-- **MVVM**: Full architecture implementation
+- **MVVM**: Simplified architecture implementation
   - `MetronomeViewModel` with StateFlow
   - Service binding and lifecycle management
   - Proper state management
-- **Testing**: Comprehensive test coverage
-  - **Unit Tests** (82 tests total):
-    - `DrumPatternTest`: 13 tests for pattern data model validation
-    - `AccentPatternTest`: 11 tests for accent pattern enums
-    - `MetronomeAudioPlayerTest`: 36 tests for audio playback (Robolectric)
-    - `MetronomeViewModelTest`: 22 tests for ViewModel state management
-  - **Instrumented Tests** (44 tests total):
-    - `MetronomeScreenTest`: 27 UI tests for Compose interactions
-    - `MetronomeServiceTest`: 17 tests for service with Hilt DI
-  - Test dependencies: JUnit 4, Mockito-Kotlin, Turbine, Robolectric, Hilt Testing
+- **Testing**: Streamlined test coverage
+  - **Unit Tests** (~60 tests passing):
+    - `AccentPatternTest`: 8 tests for accent pattern enums
+    - `MetronomeAudioPlayerTest`: 32 tests for audio playback (Robolectric)
+    - `MetronomeViewModelTest`: 18 tests for ViewModel state management
+  - Test dependencies: JUnit 4, Mockito-Kotlin, Robolectric, Hilt Testing
 - **Permissions**: All required permissions in manifest
   - `FOREGROUND_SERVICE`
   - `FOREGROUND_SERVICE_MEDIA_PLAYBACK`
   - `POST_NOTIFICATIONS`
+- **Development Tools**:
+  - `run-app.sh` - Helper script for building and launching
+  - `RUNNING_THE_APP.md` - Comprehensive running guide
+  - `EMULATOR_AUDIO_FIX.md` - Emulator audio troubleshooting
+
+### ✅ Verified Working:
+- App runs successfully on emulator (Pixel_Fold_API_35)
+- Audio playback working (after emulator cold boot)
+- All UI controls functional
+- Background service working
+- All unit tests passing
 
 ### 🔄 Not Yet Implemented:
 - DataStore repository for settings persistence (currently defaults on restart)
 - Runtime notification permission request for Android 13+
+- Named running-focused presets ("Easy Run", "Tempo Run", etc.)
+- Workout interval features
 - Release build configuration (signing, ProGuard rules)
 - App icon and branding
-- User documentation/help screen
 
 ## Development Notes
 

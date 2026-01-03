@@ -54,16 +54,29 @@ See [DEVELOPMENT.md](DEVELOPMENT.md) for detailed setup instructions, architectu
 
 ## Status
 
-**Current Status**: ✅ MVP Complete with Advanced Features + Comprehensive Test Suite
+**Current Status**: ✅ Simplified MVP - Tested and Working
+
+**Latest Update (2026-01-03)**:
+- ✅ Removed Pattern mode complexity based on user testing feedback
+- ✅ Simplified to core running metronome features
+- ✅ ~60 unit tests passing
+- ✅ Verified working on emulator with audio
+- ✅ All builds passing
+- ✅ Ready for settings persistence implementation
 
 **Achievements**:
 - Core metronome functionality implemented and tested
-- Advanced features: Pattern sequencer, accent patterns, quick presets
-- 126 automated tests (82 unit tests + 44 instrumented tests)
+- Simple mode with accent patterns (None, Every 2nd/3rd/4th)
+- 6 sound options with volume control
 - Background playback with notification controls
-- All builds passing
+- BPM quick presets (160, 170, 175, 180, 185)
+- Comprehensive development documentation
 
-**Next Steps**: See iteration plan below for priorities
+**Next Steps**:
+- Settings persistence with DataStore
+- Runtime notification permissions
+- Named running-focused presets
+- See NEXT_ITERATION.md for full roadmap
 
 ## License
 
