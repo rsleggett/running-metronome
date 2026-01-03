@@ -63,19 +63,4 @@ class AccentPatternTest {
         assertEquals(AccentPattern.EVERY_3RD, entries[2])
         assertEquals(AccentPattern.EVERY_4TH, entries[3])
     }
-
-    @Test
-    fun `PlaybackMode should have SIMPLE value`() {
-        assertNotNull(PlaybackMode.SIMPLE)
-    }
-
-    @Test
-    fun `PlaybackMode should have PATTERN value`() {
-        assertNotNull(PlaybackMode.PATTERN)
-    }
-
-    @Test
-    fun `PlaybackMode should have exactly 2 entries`() {
-        assertEquals(2, PlaybackMode.entries.size)
-    }
 }

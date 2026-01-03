@@ -3,10 +3,7 @@ package com.electricbiro.runningmetronome.audio
 import android.content.Context
 import com.electricbiro.runningmetronome.data.model.AccentPattern
 import com.electricbiro.runningmetronome.data.model.AudioUsageType
-import com.electricbiro.runningmetronome.data.model.DrumPattern
 import com.electricbiro.runningmetronome.data.model.MetronomeSoundEnum
-import com.electricbiro.runningmetronome.data.model.PatternStep
-import com.electricbiro.runningmetronome.data.model.PlaybackMode
 import org.junit.Assert.*
 import org.junit.Before
 import org.junit.Test
@@ -146,43 +143,6 @@ class MetronomeAudioPlayerTest {
         assertFalse(audioPlayer.isPlaying())
     }
 
-    // Playback Mode Tests
-
-    @Test
-    fun `setPlaybackMode should accept SIMPLE mode`() {
-        audioPlayer.setPlaybackMode(PlaybackMode.SIMPLE)
-
-        assertTrue(true)
-    }
-
-    @Test
-    fun `setPlaybackMode should accept PATTERN mode`() {
-        audioPlayer.setPlaybackMode(PlaybackMode.PATTERN)
-
-        assertTrue(true)
-    }
-
-    @Test
-    fun `setPlaybackMode while playing should restart playback`() {
-        audioPlayer.play()
-        assertTrue(audioPlayer.isPlaying())
-
-        audioPlayer.setPlaybackMode(PlaybackMode.PATTERN)
-
-        // Should still be playing after mode change
-        assertTrue(audioPlayer.isPlaying())
-    }
-
-    @Test
-    fun `setPlaybackMode while paused should remain paused`() {
-        audioPlayer.pause()
-        assertFalse(audioPlayer.isPlaying())
-
-        audioPlayer.setPlaybackMode(PlaybackMode.PATTERN)
-
-        assertFalse(audioPlayer.isPlaying())
-    }
-
     // Accent Pattern Tests
 
     @Test
@@ -207,31 +167,6 @@ class MetronomeAudioPlayerTest {
         assertTrue(true)
     }
 
-    // Drum Pattern Tests
-
-    @Test
-    fun `setDrumPattern should accept valid patterns`() {
-        val pattern = DrumPattern(
-            steps = List(8) { PatternStep(MetronomeSoundEnum.CLASSIC) },
-            sound1 = MetronomeSoundEnum.CLASSIC,
-            sound2 = MetronomeSoundEnum.SNARE
-        )
-
-        audioPlayer.setDrumPattern(pattern)
-
-        assertTrue(true)
-    }
-
-    @Test
-    fun `setDrumPattern should reset beat counter`() {
-        audioPlayer.play()
-
-        val pattern = DrumPattern()
-        audioPlayer.setDrumPattern(pattern)
-
-        assertTrue(true)
-    }
-
     // Sound Tests
 
     @Test
@@ -244,10 +179,10 @@ class MetronomeAudioPlayerTest {
     }
 
     @Test
-    fun `setSound should update drum pattern sound1`() {
+    fun `setSound should update current sound`() {
         audioPlayer.setSound(MetronomeSoundEnum.KNOCK)
 
-        // Sound should be updated in the pattern
+        // Sound should be updated
         assertTrue(true)
     }
 
@@ -335,7 +270,6 @@ class MetronomeAudioPlayerTest {
         audioPlayer.setBpm(160)
         audioPlayer.setVolume(50)
         audioPlayer.setSound(MetronomeSoundEnum.SNARE)
-        audioPlayer.setPlaybackMode(PlaybackMode.PATTERN)
         audioPlayer.setAccentPattern(AccentPattern.EVERY_3RD)
         audioPlayer.play()
         audioPlayer.pause()
@@ -345,38 +279,4 @@ class MetronomeAudioPlayerTest {
         assertTrue(true)
     }
 
-    @Test
-    fun `pattern with all rests should not crash`() {
-        val allRests = DrumPattern(
-            steps = List(8) { PatternStep(null) }
-        )
-
-        audioPlayer.setDrumPattern(allRests)
-        audioPlayer.setPlaybackMode(PlaybackMode.PATTERN)
-        audioPlayer.play()
-
-        assertTrue(audioPlayer.isPlaying())
-    }
-
-    @Test
-    fun `pattern with mixed sounds and rests should work`() {
-        val mixedPattern = DrumPattern(
-            steps = listOf(
-                PatternStep(MetronomeSoundEnum.CLASSIC),
-                PatternStep(null),
-                PatternStep(MetronomeSoundEnum.SNARE),
-                PatternStep(null),
-                PatternStep(MetronomeSoundEnum.CLASSIC),
-                PatternStep(null),
-                PatternStep(MetronomeSoundEnum.SNARE),
-                PatternStep(null)
-            )
-        )
-
-        audioPlayer.setDrumPattern(mixedPattern)
-        audioPlayer.setPlaybackMode(PlaybackMode.PATTERN)
-        audioPlayer.play()
-
-        assertTrue(audioPlayer.isPlaying())
-    }
 }

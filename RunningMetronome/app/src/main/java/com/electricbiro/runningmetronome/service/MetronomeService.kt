@@ -230,24 +230,10 @@ class MetronomeService : Service() {
     }
 
     /**
-     * Set playback mode
-     */
-    fun setPlaybackMode(mode: com.electricbiro.runningmetronome.data.model.PlaybackMode) {
-        audioPlayer.setPlaybackMode(mode)
-    }
-
-    /**
      * Set accent pattern
      */
     fun setAccentPattern(pattern: com.electricbiro.runningmetronome.data.model.AccentPattern) {
         audioPlayer.setAccentPattern(pattern)
-    }
-
-    /**
-     * Set drum pattern
-     */
-    fun setDrumPattern(pattern: com.electricbiro.runningmetronome.data.model.DrumPattern) {
-        audioPlayer.setDrumPattern(pattern)
     }
 
     override fun onDestroy() {

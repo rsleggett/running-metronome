@@ -2,9 +2,7 @@ package com.electricbiro.runningmetronome.ui.viewmodel
 
 import com.electricbiro.runningmetronome.data.model.AccentPattern
 import com.electricbiro.runningmetronome.data.model.AudioUsageType
-import com.electricbiro.runningmetronome.data.model.DrumPattern
 import com.electricbiro.runningmetronome.data.model.MetronomeSoundEnum
-import com.electricbiro.runningmetronome.data.model.PlaybackMode
 import com.electricbiro.runningmetronome.service.MetronomeService
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -57,7 +55,6 @@ class MetronomeViewModelTest {
         assertEquals(75, state.volume)
         assertEquals(MetronomeSoundEnum.CLASSIC, state.sound)
         assertEquals(AudioUsageType.MEDIA, state.audioUsageType)
-        assertEquals(PlaybackMode.SIMPLE, state.playbackMode)
         assertEquals(AccentPattern.NONE, state.accentPattern)
     }
 
@@ -179,22 +176,6 @@ class MetronomeViewModelTest {
         verify(mockService).setAudioUsageType(AudioUsageType.NOTIFICATION)
     }
 
-    // Playback Mode Tests
-
-    @Test
-    fun `setPlaybackMode should update UI state`() {
-        viewModel.setPlaybackMode(PlaybackMode.PATTERN)
-
-        assertEquals(PlaybackMode.PATTERN, viewModel.uiState.value.playbackMode)
-    }
-
-    @Test
-    fun `setPlaybackMode should call service setPlaybackMode`() {
-        viewModel.setPlaybackMode(PlaybackMode.PATTERN)
-
-        verify(mockService).setPlaybackMode(PlaybackMode.PATTERN)
-    }
-
     // Accent Pattern Tests
 
     @Test
@@ -209,26 +190,6 @@ class MetronomeViewModelTest {
         viewModel.setAccentPattern(AccentPattern.EVERY_2ND)
 
         verify(mockService).setAccentPattern(AccentPattern.EVERY_2ND)
-    }
-
-    // Drum Pattern Tests
-
-    @Test
-    fun `setDrumPattern should update UI state`() {
-        val newPattern = DrumPattern(sound1 = MetronomeSoundEnum.KNOCK)
-
-        viewModel.setDrumPattern(newPattern)
-
-        assertEquals(newPattern, viewModel.uiState.value.drumPattern)
-    }
-
-    @Test
-    fun `setDrumPattern should call service setDrumPattern`() {
-        val newPattern = DrumPattern(sound2 = MetronomeSoundEnum.DRUMTR808)
-
-        viewModel.setDrumPattern(newPattern)
-
-        verify(mockService).setDrumPattern(newPattern)
     }
 
     // Service Binding Tests
@@ -275,7 +236,6 @@ class MetronomeViewModelTest {
         viewModel.setBpm(160f)
         viewModel.setVolume(90f)
         viewModel.setSound(MetronomeSoundEnum.DRUMTR909)
-        viewModel.setPlaybackMode(PlaybackMode.PATTERN)
         viewModel.setAccentPattern(AccentPattern.EVERY_3RD)
 
         val state = viewModel.uiState.value
@@ -283,7 +243,6 @@ class MetronomeViewModelTest {
         assertEquals(160, state.bpm)
         assertEquals(90, state.volume)
         assertEquals(MetronomeSoundEnum.DRUMTR909, state.sound)
-        assertEquals(PlaybackMode.PATTERN, state.playbackMode)
         assertEquals(AccentPattern.EVERY_3RD, state.accentPattern)
     }
 

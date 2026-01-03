@@ -32,6 +32,52 @@ Running Metronome is an Android app that plays a metronome beat in the backgroun
 ./gradlew clean
 ```
 
+## Running the App
+
+**Quick Start (Recommended):**
+```bash
+# Use the helper script to build, install, and launch
+cd RunningMetronome
+./run-app.sh
+```
+
+**Manual Commands:**
+```bash
+# Build and install
+./gradlew installDebug
+
+# Launch the app
+adb shell am start -n com.electricbiro.runningmetronome/.MainActivity
+
+# Combined (build, install, and launch)
+./gradlew installDebug && adb shell am start -n com.electricbiro.runningmetronome/.MainActivity
+```
+
+**Check Connected Devices:**
+```bash
+adb devices
+```
+
+**Start an Emulator:**
+```bash
+# List available emulators
+emulator -list-avds
+
+# Start an emulator
+emulator -avd Pixel_Fold_API_35 &
+```
+
+**View Logs:**
+```bash
+# View all metronome logs
+adb logcat | grep -i metronome
+
+# View crash logs
+adb logcat | grep -E "AndroidRuntime|FATAL"
+```
+
+For more details, see [RUNNING_THE_APP.md](RunningMetronome/RUNNING_THE_APP.md)
+
 ## Architecture
 
 This app uses **MVVM (Model-View-ViewModel)** with **Hilt** for dependency injection and **Jetpack Compose** for UI.
@@ -112,7 +158,7 @@ User can switch between sounds via FilterChip selector in UI.
 
 ## Current Implementation Status
 
-**Phase**: MVP Complete with Advanced Features + Comprehensive Test Suite
+**Phase**: Simplified MVP - Pattern Mode Removed, Ready for Settings Persistence
 
 ### ✅ Implemented:
 - **Hilt DI**: Complete setup with `@HiltAndroidApp` and `@AndroidEntryPoint`
