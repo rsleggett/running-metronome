@@ -152,11 +152,9 @@ hilt = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }
 - [x] Connect UI to audio engine via service
 
 ### Phase 6: Testing & Polish ✅ TESTS COMPLETE, POLISH IN PROGRESS
-- [x] Unit tests for ViewModel and data models (82 tests passing)
-  - [x] DrumPatternTest: 13 tests for pattern validation
-  - [x] AccentPatternTest: 11 tests for accent patterns
-  - [x] MetronomeAudioPlayerTest: 36 tests for audio playback (Robolectric)
-  - [x] MetronomeViewModelTest: 22 tests for state management
+- [x] Unit tests for ViewModel and data models (~50 tests passing)
+  - [x] MetronomeAudioPlayerTest: 32 tests for audio playback (Robolectric)
+  - [x] MetronomeViewModelTest: 18 tests for state management
 - [x] Instrumented tests (44 tests ready for device testing)
   - [x] MetronomeScreenTest: 27 UI tests for Compose interactions
   - [x] MetronomeServiceTest: 17 tests for service with Hilt DI
@@ -167,13 +165,13 @@ hilt = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }
 - [ ] Runtime notification permissions for Android 13+
 - [ ] Settings persistence with DataStore
 
-### Phase 7: Advanced Features ✅ COMPLETE
-- [x] Playback modes (Simple/Pattern)
-- [x] Accent patterns for Simple mode (None, Every 2nd/3rd/4th)
-- [x] 8-step drum pattern sequencer for Pattern mode
+### Phase 7: Advanced Features ✅ REMOVED (Simplified to MVP)
 - [x] BPM quick presets (160, 170, 175, 180, 185)
-- [x] Pattern editor UI with step controls
-- [x] Dual sound selection for patterns
+- ~~Playback modes (Simple/Pattern)~~ - Removed for simplicity
+- ~~Accent patterns for Simple mode~~ - Removed for simplicity
+- ~~8-step drum pattern sequencer~~ - Removed for simplicity
+- ~~Pattern editor UI with step controls~~ - Removed for simplicity
+- ~~Dual sound selection for patterns~~ - Removed for simplicity
 
 ## Key Technical Considerations
 
@@ -301,10 +299,10 @@ Tested scenarios:
   - Updated CLAUDE.md with running instructions
 
 **What Remains** (Simplified MVP):
-- Simple metronome with accent patterns (None, Every 2nd/3rd/4th)
+- Simple metronome with consistent beat
 - 6 sound options, volume control, BPM control (40-200)
 - Background playback with notification controls
-- ~60 unit tests passing, all builds successful
+- ~50 unit tests passing, all builds successful
 
 **Next Priority**: Settings persistence with DataStore (see NEXT_ITERATION.md)
 
@@ -319,15 +317,12 @@ Tested scenarios:
 - **Verified** all tests pass and build is clean
 - **Updated** documentation to reflect current implementation status
 
-### Session 2025-11-16: Advanced Features
-- **Added** Playback modes (Simple/Pattern)
-- **Added** Accent patterns for Simple mode (None, Every 2nd, Every 3rd, Every 4th)
-- **Added** 8-step drum pattern sequencer
+### Session 2025-11-16: Advanced Features (Later Simplified)
 - **Added** BPM quick presets (160, 170, 175, 180, 185)
-- **Added** Pattern editor UI with step controls
 - **Added** Sound selector for 6 different metronome sounds
 - **Added** Audio mode selector (Media/Notification)
 - **Added** Background service with notification controls
 - **Fixed** Sound not playing on real devices (mute switch issue)
 - **Fixed** UI layout cutting off play button (scrollable layout)
 - **Updated** `.gitignore` files and added androidx.media dependency
+- **Note**: Playback modes, accent patterns, and drum sequencer were later removed for simplicity

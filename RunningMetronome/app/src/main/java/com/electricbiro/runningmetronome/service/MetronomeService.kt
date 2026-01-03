@@ -229,13 +229,6 @@ class MetronomeService : Service() {
         _audioUsageType.value = usageType
     }
 
-    /**
-     * Set accent pattern
-     */
-    fun setAccentPattern(pattern: com.electricbiro.runningmetronome.data.model.AccentPattern) {
-        audioPlayer.setAccentPattern(pattern)
-    }
-
     override fun onDestroy() {
         super.onDestroy()
         audioPlayer.release()

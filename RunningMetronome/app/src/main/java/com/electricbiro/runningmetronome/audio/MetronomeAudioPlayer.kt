@@ -6,7 +6,6 @@ import android.media.SoundPool
 import android.util.Log
 import kotlinx.coroutines.*
 import com.electricbiro.runningmetronome.R
-import com.electricbiro.runningmetronome.data.model.AccentPattern
 import com.electricbiro.runningmetronome.data.model.AudioUsageType
 import com.electricbiro.runningmetronome.data.model.MetronomeSoundEnum
 
@@ -14,7 +13,10 @@ import com.electricbiro.runningmetronome.data.model.MetronomeSoundEnum
  * Metronome audio player that plays click sounds at precise BPM intervals.
  * Uses SoundPool for low-latency playback that mixes with other audio.
  */
-class MetronomeAudioPlayer(private val context: Context) {
+class MetronomeAudioPlayer(context: Context) {
+
+    // Use application context to avoid attribution tag issues
+    private val context: Context = context.applicationContext
 
     private var soundPool: SoundPool? = null
     private val soundIdMap = mutableMapOf<MetronomeSoundEnum, Int>()
@@ -26,12 +28,9 @@ class MetronomeAudioPlayer(private val context: Context) {
     private var currentVolume: Float = 0.75f // 0.0 to 1.0
     private var currentAudioUsageType: AudioUsageType = AudioUsageType.MEDIA
     private var currentSound: MetronomeSoundEnum = MetronomeSoundEnum.CLASSIC
-    private var currentAccentPattern: AccentPattern = AccentPattern.NONE
-    private var beatCounter: Int = 0
 
     companion object {
         private const val TAG = "MetronomeAudioPlayer"
-        private const val ACCENT_VOLUME_MULTIPLIER = 1.3f
     }
 
     init {
@@ -77,11 +76,6 @@ class MetronomeAudioPlayer(private val context: Context) {
     private fun loadSound(sound: MetronomeSoundEnum) {
         val resourceId = when (sound) {
             MetronomeSoundEnum.CLASSIC -> R.raw.metronomeclick
-            MetronomeSoundEnum.SNARE -> R.raw.metronomesnare
-            MetronomeSoundEnum.DRUMTR707 -> R.raw.metronomedrumtr707
-            MetronomeSoundEnum.DRUMTR808 -> R.raw.metronomedrumtr808
-            MetronomeSoundEnum.DRUMTR909 -> R.raw.metronomedrumtr909
-            MetronomeSoundEnum.KNOCK -> R.raw.metronomeknock
         }
 
         Log.d(TAG, "Loading sound: $sound resourceId=$resourceId")
@@ -101,7 +95,6 @@ class MetronomeAudioPlayer(private val context: Context) {
         Log.d(TAG, "play() called, isPlaying=$isPlaying, volume=$currentVolume, bpm=$currentBpm")
         if (isPlaying) return
         isPlaying = true
-        beatCounter = 0
 
         // Launch coroutine for precise timing
         playbackJob = CoroutineScope(Dispatchers.Default).launch {
@@ -114,34 +107,20 @@ class MetronomeAudioPlayer(private val context: Context) {
             while (isActive && isPlaying) {
                 playBeat()
                 delay(intervalMs)
-                beatCounter++
             }
             Log.d(TAG, "Playback coroutine ended")
         }
     }
 
     /**
-     * Play a beat with optional accent
+     * Play a beat
      */
     private fun playBeat() {
-        val isAccented = when (currentAccentPattern) {
-            AccentPattern.NONE -> false
-            AccentPattern.EVERY_2ND -> beatCounter % 2 == 0
-            AccentPattern.EVERY_3RD -> beatCounter % 3 == 0
-            AccentPattern.EVERY_4TH -> beatCounter % 4 == 0
-        }
-
-        val volume = if (isAccented) {
-            (currentVolume * ACCENT_VOLUME_MULTIPLIER).coerceAtMost(1.0f)
-        } else {
-            currentVolume
-        }
-
         soundPool?.let { pool ->
             val soundId = soundIdMap[currentSound]
             if (soundId != null && soundId != 0) {
-                val streamId = pool.play(soundId, volume, volume, 1, 0, 1.0f)
-                Log.d(TAG, "playBeat: sound=$currentSound, soundId=$soundId, volume=$volume, streamId=$streamId")
+                val streamId = pool.play(soundId, currentVolume, currentVolume, 1, 0, 1.0f)
+                Log.d(TAG, "playBeat: sound=$currentSound, soundId=$soundId, volume=$currentVolume, streamId=$streamId")
             } else {
                 Log.w(TAG, "playBeat: sound $currentSound not loaded yet")
             }
@@ -175,6 +154,8 @@ class MetronomeAudioPlayer(private val context: Context) {
      * @param bpm Tempo value (40-200 BPM)
      */
     fun setBpm(bpm: Int) {
+        Log.d(TAG, "Changing bpm from $currentBpm to $bpm")
+
         currentBpm = bpm.coerceIn(40, 200)
     }
 
@@ -183,6 +164,8 @@ class MetronomeAudioPlayer(private val context: Context) {
      * @param volume Volume level (0-100)
      */
     fun setVolume(volume: Int) {
+        Log.d(TAG, "Changing volume from $currentVolume to $volume")
+
         currentVolume = (volume.coerceIn(0, 100) / 100f)
     }
 
@@ -194,15 +177,6 @@ class MetronomeAudioPlayer(private val context: Context) {
         Log.d(TAG, "setSound: $sound")
         loadSound(sound)
         currentSound = sound
-    }
-
-    /**
-     * Set the accent pattern
-     */
-    fun setAccentPattern(pattern: AccentPattern) {
-        Log.d(TAG, "setAccentPattern: $pattern")
-        currentAccentPattern = pattern
-        beatCounter = 0  // Reset to start accent pattern from beginning
     }
 
     /**

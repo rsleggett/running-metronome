@@ -167,10 +167,8 @@ User can switch between sounds via FilterChip selector in UI.
   - Switchable audio modes (Media/Notification)
   - Volume control (0-100%)
   - BPM range: 40-200
-  - Simple metronome with optional accent patterns
+  - Simple metronome with consistent beat
   - Debug logging for troubleshooting
-- **Accent Patterns**: Standard metronome with accent patterns
-  - None, Every 2nd, Every 3rd, Every 4th
 - **Background Service**: `MetronomeService` foreground service
   - Persistent notification with Play/Pause/Stop controls
   - Continues playing when app is minimized
@@ -182,7 +180,6 @@ User can switch between sounds via FilterChip selector in UI.
   - Volume slider with percentage display
   - Sound selector (6 sounds via FilterChips)
   - Audio mode selector (Media/Notification)
-  - Accent pattern selector
   - Large Play/Pause FAB
   - Scrollable layout
 - **MVVM**: Simplified architecture implementation
@@ -190,8 +187,7 @@ User can switch between sounds via FilterChip selector in UI.
   - Service binding and lifecycle management
   - Proper state management
 - **Testing**: Streamlined test coverage
-  - **Unit Tests** (~60 tests passing):
-    - `AccentPatternTest`: 8 tests for accent pattern enums
+  - **Unit Tests** (~50 tests passing):
     - `MetronomeAudioPlayerTest`: 32 tests for audio playback (Robolectric)
     - `MetronomeViewModelTest`: 18 tests for ViewModel state management
   - Test dependencies: JUnit 4, Mockito-Kotlin, Robolectric, Hilt Testing

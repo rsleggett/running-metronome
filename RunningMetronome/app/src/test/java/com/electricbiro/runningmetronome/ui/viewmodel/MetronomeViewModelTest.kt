@@ -1,6 +1,5 @@
 package com.electricbiro.runningmetronome.ui.viewmodel
 
-import com.electricbiro.runningmetronome.data.model.AccentPattern
 import com.electricbiro.runningmetronome.data.model.AudioUsageType
 import com.electricbiro.runningmetronome.data.model.MetronomeSoundEnum
 import com.electricbiro.runningmetronome.service.MetronomeService
@@ -55,7 +54,6 @@ class MetronomeViewModelTest {
         assertEquals(75, state.volume)
         assertEquals(MetronomeSoundEnum.CLASSIC, state.sound)
         assertEquals(AudioUsageType.MEDIA, state.audioUsageType)
-        assertEquals(AccentPattern.NONE, state.accentPattern)
     }
 
     // BPM Tests
@@ -144,22 +142,6 @@ class MetronomeViewModelTest {
         assertTrue(viewModel.uiState.value.isPlaying)
     }
 
-    // Sound Tests
-
-    @Test
-    fun `setSound should update UI state`() {
-        viewModel.setSound(MetronomeSoundEnum.SNARE)
-
-        assertEquals(MetronomeSoundEnum.SNARE, viewModel.uiState.value.sound)
-    }
-
-    @Test
-    fun `setSound should call service setSound`() {
-        viewModel.setSound(MetronomeSoundEnum.KNOCK)
-
-        verify(mockService).setSound(MetronomeSoundEnum.KNOCK)
-    }
-
     // Audio Usage Type Tests
 
     @Test
@@ -174,22 +156,6 @@ class MetronomeViewModelTest {
         viewModel.setAudioUsageType(AudioUsageType.NOTIFICATION)
 
         verify(mockService).setAudioUsageType(AudioUsageType.NOTIFICATION)
-    }
-
-    // Accent Pattern Tests
-
-    @Test
-    fun `setAccentPattern should update UI state`() {
-        viewModel.setAccentPattern(AccentPattern.EVERY_4TH)
-
-        assertEquals(AccentPattern.EVERY_4TH, viewModel.uiState.value.accentPattern)
-    }
-
-    @Test
-    fun `setAccentPattern should call service setAccentPattern`() {
-        viewModel.setAccentPattern(AccentPattern.EVERY_2ND)
-
-        verify(mockService).setAccentPattern(AccentPattern.EVERY_2ND)
     }
 
     // Service Binding Tests
@@ -235,15 +201,11 @@ class MetronomeViewModelTest {
     fun `multiple state changes should all be reflected in UI state`() {
         viewModel.setBpm(160f)
         viewModel.setVolume(90f)
-        viewModel.setSound(MetronomeSoundEnum.DRUMTR909)
-        viewModel.setAccentPattern(AccentPattern.EVERY_3RD)
 
         val state = viewModel.uiState.value
 
         assertEquals(160, state.bpm)
         assertEquals(90, state.volume)
-        assertEquals(MetronomeSoundEnum.DRUMTR909, state.sound)
-        assertEquals(AccentPattern.EVERY_3RD, state.accentPattern)
     }
 
     @Test

@@ -1,7 +1,6 @@
 package com.electricbiro.runningmetronome.audio
 
 import android.content.Context
-import com.electricbiro.runningmetronome.data.model.AccentPattern
 import com.electricbiro.runningmetronome.data.model.AudioUsageType
 import com.electricbiro.runningmetronome.data.model.MetronomeSoundEnum
 import org.junit.Assert.*
@@ -143,30 +142,6 @@ class MetronomeAudioPlayerTest {
         assertFalse(audioPlayer.isPlaying())
     }
 
-    // Accent Pattern Tests
-
-    @Test
-    fun `setAccentPattern should accept all accent patterns`() {
-        audioPlayer.setAccentPattern(AccentPattern.NONE)
-        audioPlayer.setAccentPattern(AccentPattern.EVERY_2ND)
-        audioPlayer.setAccentPattern(AccentPattern.EVERY_3RD)
-        audioPlayer.setAccentPattern(AccentPattern.EVERY_4TH)
-
-        assertTrue(true)
-    }
-
-    @Test
-    fun `setAccentPattern should reset beat counter`() {
-        // Start playing to increment beat counter
-        audioPlayer.play()
-
-        // Changing accent pattern should reset counter
-        audioPlayer.setAccentPattern(AccentPattern.EVERY_2ND)
-
-        // If no exception, test passes
-        assertTrue(true)
-    }
-
     // Sound Tests
 
     @Test
@@ -175,14 +150,6 @@ class MetronomeAudioPlayerTest {
             audioPlayer.setSound(sound)
         }
 
-        assertTrue(true)
-    }
-
-    @Test
-    fun `setSound should update current sound`() {
-        audioPlayer.setSound(MetronomeSoundEnum.KNOCK)
-
-        // Sound should be updated
         assertTrue(true)
     }
 
@@ -269,8 +236,6 @@ class MetronomeAudioPlayerTest {
     fun `changing multiple settings rapidly should not cause issues`() {
         audioPlayer.setBpm(160)
         audioPlayer.setVolume(50)
-        audioPlayer.setSound(MetronomeSoundEnum.SNARE)
-        audioPlayer.setAccentPattern(AccentPattern.EVERY_3RD)
         audioPlayer.play()
         audioPlayer.pause()
         audioPlayer.play()

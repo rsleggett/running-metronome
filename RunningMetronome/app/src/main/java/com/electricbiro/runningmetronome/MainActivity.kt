@@ -25,8 +25,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.hilt.navigation.compose.hiltViewModel
-import com.electricbiro.runningmetronome.data.model.AccentPattern
 import com.electricbiro.runningmetronome.data.model.AudioUsageType
 import com.electricbiro.runningmetronome.data.model.MetronomeSoundEnum
 import com.electricbiro.runningmetronome.service.MetronomeService
@@ -147,6 +145,36 @@ fun MetronomeScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
+            // Play/Pause Button
+            FloatingActionButton(
+                onClick = { viewModel.togglePlayPause() },
+                modifier = Modifier.size(80.dp)
+            ) {
+                Icon(
+                    imageVector = if (uiState.isPlaying) {
+                        Icons.Filled.Pause
+                    } else {
+                        Icons.Filled.PlayArrow
+                    },
+                    contentDescription = if (uiState.isPlaying) "Pause" else "Play",
+                    modifier = Modifier.size(40.dp)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Text(
+                text = if (uiState.isPlaying) "Playing" else "Paused",
+                style = MaterialTheme.typography.bodyLarge,
+                color = if (uiState.isPlaying) {
+                    MaterialTheme.colorScheme.primary
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                }
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
             // Preset BPM Chips
             Text(
                 text = "Quick Presets",
@@ -177,36 +205,6 @@ fun MetronomeScreen(
 
             Spacer(modifier = Modifier.height(32.dp))
 
-            // Sound Selector
-            Text(
-                text = "Sound",
-                style = MaterialTheme.typography.titleSmall,
-                modifier = Modifier.align(Alignment.Start)
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            SoundSelector(
-                selectedSound = uiState.sound,
-                onSoundSelected = { viewModel.setSound(it) },
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // Accent Pattern Selector
-            Text(
-                text = "Accent Pattern",
-                style = MaterialTheme.typography.titleSmall,
-                modifier = Modifier.align(Alignment.Start)
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            AccentPatternSelector(
-                selectedPattern = uiState.accentPattern,
-                onPatternSelected = { viewModel.setAccentPattern(it) },
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            Spacer(modifier = Modifier.height(24.dp))
-
             // Audio Usage Type Selector
             Text(
                 text = "Audio Mode",
@@ -222,35 +220,7 @@ fun MetronomeScreen(
 
             Spacer(modifier = Modifier.height(32.dp))
 
-            // Play/Pause Button
-            FloatingActionButton(
-                onClick = { viewModel.togglePlayPause() },
-                modifier = Modifier.size(80.dp)
-            ) {
-                Icon(
-                    imageVector = if (uiState.isPlaying) {
-                        Icons.Filled.Pause
-                    } else {
-                        Icons.Filled.PlayArrow
-                    },
-                    contentDescription = if (uiState.isPlaying) "Pause" else "Play",
-                    modifier = Modifier.size(40.dp)
-                )
-            }
 
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Text(
-                text = if (uiState.isPlaying) "Playing" else "Paused",
-                style = MaterialTheme.typography.bodyLarge,
-                color = if (uiState.isPlaying) {
-                    MaterialTheme.colorScheme.primary
-                } else {
-                    MaterialTheme.colorScheme.onSurfaceVariant
-                }
-            )
-
-            Spacer(modifier = Modifier.height(24.dp))
         }
     }
 }
@@ -332,27 +302,6 @@ fun BpmPresetChips(
                 label = {
                     Text(text = "$bpm")
                 },
-                modifier = Modifier.weight(1f)
-            )
-        }
-    }
-}
-
-@Composable
-fun AccentPatternSelector(
-    selectedPattern: AccentPattern,
-    onPatternSelected: (AccentPattern) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Row(
-        modifier = modifier,
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        AccentPattern.entries.forEach { pattern ->
-            FilterChip(
-                selected = selectedPattern == pattern,
-                onClick = { onPatternSelected(pattern) },
-                label = { Text(pattern.displayName) },
                 modifier = Modifier.weight(1f)
             )
         }

@@ -1,7 +1,6 @@
 package com.electricbiro.runningmetronome.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
-import com.electricbiro.runningmetronome.data.model.AccentPattern
 import com.electricbiro.runningmetronome.data.model.AudioUsageType
 import com.electricbiro.runningmetronome.data.model.MetronomeSoundEnum
 import com.electricbiro.runningmetronome.service.MetronomeService
@@ -20,8 +19,7 @@ data class MetronomeUiState(
     val bpm: Int = 175,
     val volume: Int = 75,
     val sound: MetronomeSoundEnum = MetronomeSoundEnum.CLASSIC,
-    val audioUsageType: AudioUsageType = AudioUsageType.MEDIA,
-    val accentPattern: AccentPattern = AccentPattern.NONE
+    val audioUsageType: AudioUsageType = AudioUsageType.MEDIA
 )
 
 /**
@@ -102,13 +100,5 @@ class MetronomeViewModel @Inject constructor() : ViewModel() {
     fun setAudioUsageType(usageType: AudioUsageType) {
         service?.setAudioUsageType(usageType)
         _uiState.update { it.copy(audioUsageType = usageType) }
-    }
-
-    /**
-     * Change the accent pattern
-     */
-    fun setAccentPattern(pattern: AccentPattern) {
-        service?.setAccentPattern(pattern)
-        _uiState.update { it.copy(accentPattern = pattern) }
     }
 }
