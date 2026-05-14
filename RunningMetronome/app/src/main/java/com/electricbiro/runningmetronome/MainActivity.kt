@@ -121,7 +121,22 @@ fun MetronomeScreen(
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // Preset BPM Chips
+            Text(
+                text = "Running Presets",
+                style = MaterialTheme.typography.titleSmall,
+                modifier = Modifier.align(Alignment.Start)
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            BpmPresetChips(
+                currentBpm = uiState.bpm,
+                onBpmSelected = { viewModel.setBpm(it.toFloat()) },
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
 
             // BPM Slider
             Text(
@@ -132,15 +147,15 @@ fun MetronomeScreen(
             Slider(
                 value = uiState.bpm.toFloat(),
                 onValueChange = { viewModel.setBpm(it) },
-                valueRange = 40f..200f,
+                valueRange = 130f..210f,
                 modifier = Modifier.fillMaxWidth()
             )
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Text("40", style = MaterialTheme.typography.bodySmall)
-                Text("200", style = MaterialTheme.typography.bodySmall)
+                Text("130", style = MaterialTheme.typography.bodySmall)
+                Text("210", style = MaterialTheme.typography.bodySmall)
             }
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -171,21 +186,6 @@ fun MetronomeScreen(
                 } else {
                     MaterialTheme.colorScheme.onSurfaceVariant
                 }
-            )
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // Preset BPM Chips
-            Text(
-                text = "Running Presets",
-                style = MaterialTheme.typography.titleSmall,
-                modifier = Modifier.align(Alignment.Start)
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            BpmPresetChips(
-                currentBpm = uiState.bpm,
-                onBpmSelected = { viewModel.setBpm(it.toFloat()) },
-                modifier = Modifier.fillMaxWidth()
             )
 
             Spacer(modifier = Modifier.height(32.dp))
