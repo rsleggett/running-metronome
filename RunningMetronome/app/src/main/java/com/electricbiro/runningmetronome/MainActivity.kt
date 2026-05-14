@@ -177,7 +177,7 @@ fun MetronomeScreen(
 
             // Preset BPM Chips
             Text(
-                text = "Quick Presets",
+                text = "Running Presets",
                 style = MaterialTheme.typography.titleSmall,
                 modifier = Modifier.align(Alignment.Start)
             )
@@ -289,18 +289,29 @@ fun BpmPresetChips(
     onBpmSelected: (Int) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val presets = listOf(160, 170, 175, 180, 185)
+    val presets = listOf(
+        "Easy" to 160,
+        "Tempo" to 170,
+        "Race" to 175,
+        "Speed" to 180,
+        "Fast" to 185,
+    )
 
     Row(
         modifier = modifier,
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        presets.forEach { bpm ->
+        presets.forEach { (label, bpm) ->
             FilterChip(
                 selected = currentBpm == bpm,
                 onClick = { onBpmSelected(bpm) },
                 label = {
-                    Text(text = "$bpm")
+                    Text(
+                        text = label,
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Medium,
+                        maxLines = 1
+                    )
                 },
                 modifier = Modifier.weight(1f)
             )
