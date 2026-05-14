@@ -2,43 +2,33 @@
 
 ## Current State (May 2026)
 
-The app is a working MVP. Core metronome functionality, background playback, notification controls, and a custom icon are all done. The main gap is that nothing persists between sessions.
+The app is feature-complete for everyday use. All core functionality works, settings persist between sessions, and the UI is polished. The remaining gap before a Play Store release is the signing/build configuration.
 
 ### Done
 - [x] BPM slider (130–210) with live updates while playing
-- [x] Named running presets (Easy 160, Tempo 170, Race 175, Speed 180, Fast 185)
+- [x] Named running presets (Easy 160, Tempo 170, Race 175, Speed 180, Fast 185, Sprint 195) in 3×3 grid
 - [x] Volume control (0–100%)
 - [x] Audio mode toggle (Media / Notification)
 - [x] Background foreground service with notification play/pause
 - [x] Custom app icon (indigo + coral metronome)
 - [x] Brand colour scheme (indigo/coral, light + dark mode)
-- [x] ~50 unit tests passing
+- [x] Settings persistence (BPM, volume, audio mode via DataStore)
+- [x] Runtime POST_NOTIFICATIONS permission request (Android 13+)
+- [x] Notification back-stack fix (no duplicate MainActivity on back press)
+- [x] ~54 unit tests passing
 
 ### Not done
-- [ ] **Settings persistence** — biggest gap, everything resets on restart
-- [ ] Runtime `POST_NOTIFICATIONS` permission request (Android 13+)
-- [ ] Release build (signing config, ProGuard rules, Play Store listing)
+- [ ] **Release build** — signing config, ProGuard rules, Play Store listing
 
 ---
 
 ## Suggested Next Steps
 
-### 1. Settings persistence (highest value)
-Use DataStore to save BPM, volume, sound, and audio mode between sessions. Users shouldn't have to reconfigure every run.
-
-```
-data/repository/SettingsRepository.kt   ← new
-di/AppModule.kt                         ← wire up repository
-ui/viewmodel/MetronomeViewModel.kt      ← load on init, save on change
-```
-
-### 2. Runtime notification permission
-On Android 13+, POST_NOTIFICATIONS must be requested at runtime. Without it the notification (and therefore background controls) silently doesn't appear. A single `rememberPermissionState` call in `MainActivity` before starting the service is all that's needed.
-
-### 3. Release build
+### 1. Release build
 - Set up a keystore and signing config in `build.gradle.kts`
 - Add basic ProGuard rules for Hilt and Compose
 - Test a release APK on a real device
+- Create Play Store listing (screenshots, description, privacy policy)
 
 ---
 

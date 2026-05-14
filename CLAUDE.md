@@ -158,7 +158,7 @@ User can switch between sounds via FilterChip selector in UI.
 
 ## Current Implementation Status
 
-**Phase**: Working MVP (May 2026)
+**Phase**: Feature-complete MVP (May 2026)
 
 ### ✅ Implemented:
 - **Hilt DI**: Complete setup with `@HiltAndroidApp` and `@AndroidEntryPoint`
@@ -166,37 +166,39 @@ User can switch between sounds via FilterChip selector in UI.
   - BPM range: 130–210, live changes take effect on next beat
   - Switchable audio modes (Media/Notification)
   - Volume control (0–100%)
-  - Debug logging for troubleshooting
 - **Background Service**: `MetronomeService` foreground service
   - Persistent notification with Play/Pause control (no Stop button)
   - `ic_notification` music-note small icon, `ic_play`/`ic_pause` action icons
   - Continues playing when app is minimized or screen is off
-  - MediaStyle notification
+  - MediaStyle notification; tapping notification brings existing activity to foreground (no duplicate back-stack)
 - **UI**: Material 3 Compose interface with indigo/coral brand colours (light + dark mode)
-  - Named running presets (Easy 160, Tempo 170, Race 175, Speed 180, Fast 185) in 3+2 grid above slider
+  - Named running presets (Easy 160, Tempo 170, Race 175, Speed 180, Fast 185, Sprint 195) in 3×3 grid above slider
   - BPM slider with large display (130–210)
   - Volume slider with percentage display
   - Audio mode selector (Media/Notification)
   - Large Play/Pause FAB
   - Scrollable layout
-- **MVVM**: `MetronomeViewModel` syncs state FROM the service on bind — service is source of truth for `isPlaying`, `bpm`, `volume`, `sound`, `audioUsageType`
+- **Settings Persistence**: `SettingsRepository` wraps `DataStore<Preferences>`
+  - Persists BPM, volume, audio mode across app restarts
+  - 500ms debounce on saves; loaded and applied to service on bind
+  - `SettingsRepository` injected into `MetronomeViewModel` via Hilt
+- **MVVM**: `MetronomeViewModel` applies persisted settings to the service on bind; service is runtime source of truth for `isPlaying`
 - **Custom App Icon**: Indigo gradient background, white metronome body, coral/orange pendulum
+- **Permissions**: `POST_NOTIFICATIONS` requested at runtime on Android 13+ via `LaunchedEffect` in `MetronomeScreen`
 - **Testing**: ~54 unit tests passing
   - `MetronomeAudioPlayerTest`: 32 tests (Robolectric)
-  - `MetronomeViewModelTest`: 22 tests including bind-time state sync regression tests
-- **Permissions**: `FOREGROUND_SERVICE`, `FOREGROUND_SERVICE_MEDIA_PLAYBACK`, `POST_NOTIFICATIONS` in manifest
+  - `MetronomeViewModelTest`: 22 tests with stubbed `SettingsRepository`
 
 ### ✅ Verified Working:
-- App runs on Pixel_9_Pro emulator
+- App runs on Pixel_9_Pro emulator and OnePlus real device
 - Audio playback working (cold boot required on first emulator use)
 - Live BPM changes work while playing
 - Notification play/pause syncs correctly with app UI
+- Settings persist across force-stop and relaunch
 - All unit tests passing
 
 ### 🔄 Not Yet Implemented:
-- DataStore settings persistence (defaults reset on every app restart)
-- Runtime POST_NOTIFICATIONS permission request (Android 13+)
-- Release build configuration (signing, ProGuard)
+- Release build configuration (signing, ProGuard, Play Store listing)
 
 ## Development Notes
 
