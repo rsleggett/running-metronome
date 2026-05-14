@@ -121,7 +121,22 @@ fun MetronomeScreen(
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // Preset BPM Chips
+            Text(
+                text = "Running Presets",
+                style = MaterialTheme.typography.titleSmall,
+                modifier = Modifier.align(Alignment.Start)
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            BpmPresetChips(
+                currentBpm = uiState.bpm,
+                onBpmSelected = { viewModel.setBpm(it.toFloat()) },
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
 
             // BPM Slider
             Text(
@@ -132,15 +147,15 @@ fun MetronomeScreen(
             Slider(
                 value = uiState.bpm.toFloat(),
                 onValueChange = { viewModel.setBpm(it) },
-                valueRange = 40f..200f,
+                valueRange = 130f..210f,
                 modifier = Modifier.fillMaxWidth()
             )
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Text("40", style = MaterialTheme.typography.bodySmall)
-                Text("200", style = MaterialTheme.typography.bodySmall)
+                Text("130", style = MaterialTheme.typography.bodySmall)
+                Text("210", style = MaterialTheme.typography.bodySmall)
             }
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -171,21 +186,6 @@ fun MetronomeScreen(
                 } else {
                     MaterialTheme.colorScheme.onSurfaceVariant
                 }
-            )
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // Preset BPM Chips
-            Text(
-                text = "Running Presets",
-                style = MaterialTheme.typography.titleSmall,
-                modifier = Modifier.align(Alignment.Start)
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            BpmPresetChips(
-                currentBpm = uiState.bpm,
-                onBpmSelected = { viewModel.setBpm(it.toFloat()) },
-                modifier = Modifier.fillMaxWidth()
             )
 
             Spacer(modifier = Modifier.height(32.dp))
@@ -297,24 +297,31 @@ fun BpmPresetChips(
         "Fast" to 185,
     )
 
-    Row(
-        modifier = modifier,
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        presets.forEach { (label, bpm) ->
-            FilterChip(
-                selected = currentBpm == bpm,
-                onClick = { onBpmSelected(bpm) },
-                label = {
-                    Text(
-                        text = label,
-                        style = MaterialTheme.typography.labelSmall,
-                        fontWeight = FontWeight.Medium,
-                        maxLines = 1
+    val row1 = presets.take(3)
+    val row2 = presets.drop(3)
+
+    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        listOf(row1, row2).forEach { row ->
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                row.forEach { (label, bpm) ->
+                    FilterChip(
+                        selected = currentBpm == bpm,
+                        onClick = { onBpmSelected(bpm) },
+                        label = {
+                            Text(
+                                text = label,
+                                style = MaterialTheme.typography.bodySmall,
+                                fontWeight = FontWeight.Medium,
+                                maxLines = 1
+                            )
+                        },
+                        modifier = Modifier.weight(1f)
                     )
-                },
-                modifier = Modifier.weight(1f)
-            )
+                }
+                repeat(3 - row.size) {
+                    Spacer(modifier = Modifier.weight(1f))
+                }
+            }
         }
     }
 }
