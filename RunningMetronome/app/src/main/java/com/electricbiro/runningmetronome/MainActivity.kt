@@ -297,24 +297,31 @@ fun BpmPresetChips(
         "Fast" to 185,
     )
 
-    Row(
-        modifier = modifier,
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        presets.forEach { (label, bpm) ->
-            FilterChip(
-                selected = currentBpm == bpm,
-                onClick = { onBpmSelected(bpm) },
-                label = {
-                    Text(
-                        text = label,
-                        style = MaterialTheme.typography.labelSmall,
-                        fontWeight = FontWeight.Medium,
-                        maxLines = 1
+    val row1 = presets.take(3)
+    val row2 = presets.drop(3)
+
+    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        listOf(row1, row2).forEach { row ->
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                row.forEach { (label, bpm) ->
+                    FilterChip(
+                        selected = currentBpm == bpm,
+                        onClick = { onBpmSelected(bpm) },
+                        label = {
+                            Text(
+                                text = label,
+                                style = MaterialTheme.typography.bodySmall,
+                                fontWeight = FontWeight.Medium,
+                                maxLines = 1
+                            )
+                        },
+                        modifier = Modifier.weight(1f)
                     )
-                },
-                modifier = Modifier.weight(1f)
-            )
+                }
+                repeat(3 - row.size) {
+                    Spacer(modifier = Modifier.weight(1f))
+                }
+            }
         }
     }
 }
