@@ -295,6 +295,7 @@ fun BpmPresetChips(
         "Race" to 175,
         "Speed" to 180,
         "Fast" to 185,
+        "Sprint" to 195,
     )
 
     val row1 = presets.take(3)
