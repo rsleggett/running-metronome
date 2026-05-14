@@ -43,11 +43,11 @@ See [DEVELOPMENT.md](DEVELOPMENT.md) for setup instructions and architecture det
 - MVVM architecture with Hilt DI
 - Custom app icon (indigo background, white metronome, coral pendulum)
 - ~50 unit tests passing
-
-### Not yet implemented
 - Settings persistence (resets to defaults on restart — DataStore not yet wired up)
 - Runtime notification permission request (Android 13+)
 - Named running-focused presets ("Easy Run", "Tempo Run", etc.)
+
+### Not yet implemented
 - Release build configuration (signing, ProGuard)
 - Google Play Store listing
 
