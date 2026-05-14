@@ -57,7 +57,6 @@ class MetronomeService : Service() {
         // Intent actions for notification controls
         const val ACTION_PLAY = "com.electricbiro.runningmetronome.ACTION_PLAY"
         const val ACTION_PAUSE = "com.electricbiro.runningmetronome.ACTION_PAUSE"
-        const val ACTION_STOP = "com.electricbiro.runningmetronome.ACTION_STOP"
     }
 
     inner class MetronomeBinder : Binder() {
@@ -77,10 +76,6 @@ class MetronomeService : Service() {
         when (intent?.action) {
             ACTION_PLAY -> play()
             ACTION_PAUSE -> pause()
-            ACTION_STOP -> {
-                stopForeground(STOP_FOREGROUND_REMOVE)
-                stopSelf()
-            }
         }
         return START_STICKY
     }
@@ -127,16 +122,6 @@ class MetronomeService : Service() {
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )
 
-        // Intent for stop action — request code 2
-        val stopIntent = PendingIntent.getService(
-            this,
-            2,
-            Intent(this, MetronomeService::class.java).apply {
-                action = ACTION_STOP
-            },
-            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
-        )
-
         return NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle("Running Metronome")
             .setContentText("${_bpm.value} BPM - ${_sound.value.name.lowercase().replaceFirstChar { it.uppercase() }}")
@@ -148,14 +133,9 @@ class MetronomeService : Service() {
                 if (_isPlaying.value) "Pause" else "Play",
                 playPauseIntent
             )
-            .addAction(
-                R.drawable.ic_stop,
-                "Stop",
-                stopIntent
-            )
             .setStyle(
                 androidx.media.app.NotificationCompat.MediaStyle()
-                    .setShowActionsInCompactView(0, 1)
+                    .setShowActionsInCompactView(0)
             )
             .build()
     }
