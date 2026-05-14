@@ -43,7 +43,16 @@ On Android 13+, POST_NOTIFICATIONS must be requested at runtime. Without it the 
 ---
 
 ## Longer-term Ideas
-- Tap tempo (tap to set BPM)
+
+### UX / Accessibility
+- **Lock screen controls** — adjust BPM without unlocking the phone (home screen widget or lock screen media controls integration)
+- **Configurable presets** — let users rename presets and set their own BPM values, rather than the hardcoded Easy/Tempo/Race/Speed/Fast/Sprint defaults
+- **Onboarding** — first-launch flow that suggests preset BPMs based on height and running experience (taller runners generally have lower natural cadence)
+
+### Cadence Detection
+- **Detect mode** — use the accelerometer to measure the user's current step rate and display it as BPM; a "Record" button on the home screen locks that cadence in as the active BPM
+
+### Other
 - Visual pulse indicator (pulsing circle on beat)
 - Interval mode (auto-change BPM after N minutes)
 - Garmin / Health Connect integration
