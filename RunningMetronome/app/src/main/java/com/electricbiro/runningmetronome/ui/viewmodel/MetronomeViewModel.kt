@@ -40,10 +40,17 @@ class MetronomeViewModel @Inject constructor() : ViewModel() {
      */
     fun bindService(service: MetronomeService) {
         this.service = service
-        // Initialize service with current UI state
-        service.setBpm(_uiState.value.bpm)
-        service.setVolume(_uiState.value.volume)
-        service.setSound(_uiState.value.sound)
+        // Sync state FROM service — it's the source of truth, especially when
+        // the app is opened from the notification while the service is already playing.
+        _uiState.update { state ->
+            state.copy(
+                isPlaying = service.isPlaying.value,
+                bpm = service.bpm.value,
+                volume = service.volume.value,
+                sound = service.sound.value,
+                audioUsageType = service.audioUsageType.value
+            )
+        }
     }
 
     /**

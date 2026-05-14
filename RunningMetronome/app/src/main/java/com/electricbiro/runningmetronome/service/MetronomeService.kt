@@ -116,20 +116,21 @@ class MetronomeService : Service() {
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )
 
-        // Intent for play/pause action
+        // Intent for play/pause action — request code 1 (must differ from stop's code 2
+        // to prevent FLAG_UPDATE_CURRENT from overwriting the wrong PendingIntent)
         val playPauseIntent = PendingIntent.getService(
             this,
-            0,
+            1,
             Intent(this, MetronomeService::class.java).apply {
                 action = if (_isPlaying.value) ACTION_PAUSE else ACTION_PLAY
             },
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )
 
-        // Intent for stop action
+        // Intent for stop action — request code 2
         val stopIntent = PendingIntent.getService(
             this,
-            0,
+            2,
             Intent(this, MetronomeService::class.java).apply {
                 action = ACTION_STOP
             },
