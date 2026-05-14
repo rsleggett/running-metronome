@@ -2,10 +2,13 @@ package com.electricbiro.runningmetronome.ui.viewmodel
 
 import com.electricbiro.runningmetronome.data.model.AudioUsageType
 import com.electricbiro.runningmetronome.data.model.MetronomeSoundEnum
+import com.electricbiro.runningmetronome.data.repository.PersistedSettings
+import com.electricbiro.runningmetronome.data.repository.SettingsRepository
 import com.electricbiro.runningmetronome.service.MetronomeService
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
@@ -28,15 +31,23 @@ class MetronomeViewModelTest {
     private val testDispatcher = UnconfinedTestDispatcher()
     private lateinit var viewModel: MetronomeViewModel
     private lateinit var mockService: MetronomeService
+    private lateinit var mockRepository: SettingsRepository
 
     @Before
     fun setup() {
         Dispatchers.setMain(testDispatcher)
         mockService = mock()
+        mockRepository = stubRepository()
         stubServiceStateFlows(mockService)
-        viewModel = MetronomeViewModel()
+        viewModel = MetronomeViewModel(mockRepository)
         viewModel.bindService(mockService)
         clearInvocations(mockService)
+    }
+
+    private fun stubRepository(
+        settings: PersistedSettings = PersistedSettings()
+    ): SettingsRepository = mock<SettingsRepository>().also {
+        whenever(it.settings).thenReturn(flowOf(settings))
     }
 
     // Stubs the StateFlow properties that bindService() reads from the service.
@@ -182,7 +193,7 @@ class MetronomeViewModelTest {
     fun `bindService should sync default state from service into ViewModel`() {
         val newMockService = mock<MetronomeService>()
         stubServiceStateFlows(newMockService)
-        val newViewModel = MetronomeViewModel()
+        val newViewModel = MetronomeViewModel(stubRepository())
 
         newViewModel.bindService(newMockService)
 
@@ -198,7 +209,7 @@ class MetronomeViewModelTest {
     fun `bindService should reflect isPlaying true when service is already playing`() {
         val playingService = mock<MetronomeService>()
         stubServiceStateFlows(playingService, isPlaying = true)
-        val newViewModel = MetronomeViewModel()
+        val newViewModel = MetronomeViewModel(stubRepository())
 
         newViewModel.bindService(playingService)
 
@@ -211,7 +222,7 @@ class MetronomeViewModelTest {
         // must call pause(), not play(), on the first tap.
         val playingService = mock<MetronomeService>()
         stubServiceStateFlows(playingService, isPlaying = true)
-        val newViewModel = MetronomeViewModel()
+        val newViewModel = MetronomeViewModel(stubRepository())
         newViewModel.bindService(playingService)
 
         newViewModel.togglePlayPause()
@@ -220,7 +231,9 @@ class MetronomeViewModelTest {
     }
 
     @Test
-    fun `bindService should sync all non-default settings from service`() {
+    fun `bindService should apply persisted settings and isPlaying from service`() {
+        // Simulates app reopened from notification: service is playing at 160/50/NOTIFICATION,
+        // and persisted settings match (they're always written on each user change).
         val newMockService = mock<MetronomeService>()
         stubServiceStateFlows(
             newMockService,
@@ -230,12 +243,15 @@ class MetronomeViewModelTest {
             sound = MetronomeSoundEnum.CLASSIC,
             audioUsageType = AudioUsageType.NOTIFICATION
         )
-        val newViewModel = MetronomeViewModel()
+        val repo = stubRepository(
+            PersistedSettings(bpm = 160, volume = 50, audioUsageType = AudioUsageType.NOTIFICATION)
+        )
+        val newViewModel = MetronomeViewModel(repo)
 
         newViewModel.bindService(newMockService)
 
         val state = newViewModel.uiState.value
-        assertTrue(state.isPlaying)
+        assertTrue(state.isPlaying)   // from service
         assertEquals(160, state.bpm)
         assertEquals(50, state.volume)
         assertEquals(MetronomeSoundEnum.CLASSIC, state.sound)
