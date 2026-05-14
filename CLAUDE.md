@@ -199,14 +199,6 @@ User can switch between sounds via FilterChip selector in UI.
 - Named running-focused presets ("Easy Run", "Tempo Run", etc.)
 - Release build configuration (signing, ProGuard)
 
-### 🔄 Not Yet Implemented:
-- DataStore repository for settings persistence (currently defaults on restart)
-- Runtime notification permission request for Android 13+
-- Named running-focused presets ("Easy Run", "Tempo Run", etc.)
-- Workout interval features
-- Release build configuration (signing, ProGuard rules)
-- App icon and branding
-
 ## Development Notes
 
 ### Gradle Configuration

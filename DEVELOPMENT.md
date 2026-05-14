@@ -49,7 +49,29 @@ RunningMetronome/app/src/main/java/com/electricbiro/runningmetronome/
 cd RunningMetronome && ./run-app.sh
 ```
 
-See [RUNNING_THE_APP.md](RunningMetronome/RUNNING_THE_APP.md) for emulator setup and troubleshooting.
+### Emulator setup
+
+```bash
+# List available emulators
+~/Library/Android/sdk/emulator/emulator -list-avds
+
+# Start (currently Pixel_9_Pro)
+~/Library/Android/sdk/emulator/emulator -avd Pixel_9_Pro &
+
+# Wait for boot
+adb shell getprop sys.boot_completed   # 1 = ready
+```
+
+> **Audio on emulator**: If sound doesn't play, do a cold boot — in Android Studio Device Manager select Pixel_9_Pro → Cold Boot Now. Warm boots sometimes skip audio initialisation.
+
+### Troubleshooting
+
+| Problem | Fix |
+|---------|-----|
+| No devices found | `adb kill-server && adb start-server` |
+| Install fails (signature mismatch) | `./gradlew uninstallAll && ./gradlew installDebug` |
+| App crashes on launch | `adb logcat \| grep -E "AndroidRuntime\|FATAL"` |
+| Multiple devices connected | `export ANDROID_SERIAL=<serial>` then run as normal |
 
 ## Architecture Notes
 
