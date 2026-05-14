@@ -163,7 +163,7 @@ User can switch between sounds via FilterChip selector in UI.
 ### ✅ Implemented:
 - **Hilt DI**: Complete setup with `@HiltAndroidApp` and `@AndroidEntryPoint`
 - **Audio Playback**: `MetronomeAudioPlayer` using SoundPool
-  - BPM range: 40–200, live changes take effect on next beat
+  - BPM range: 130–210, live changes take effect on next beat
   - Switchable audio modes (Media/Notification)
   - Volume control (0–100%)
   - Debug logging for troubleshooting
@@ -172,9 +172,9 @@ User can switch between sounds via FilterChip selector in UI.
   - `ic_notification` music-note small icon, `ic_play`/`ic_pause` action icons
   - Continues playing when app is minimized or screen is off
   - MediaStyle notification
-- **UI**: Material 3 Compose interface
-  - BPM slider with large display (40–200)
-  - BPM quick presets (160, 170, 175, 180, 185)
+- **UI**: Material 3 Compose interface with indigo/coral brand colours (light + dark mode)
+  - Named running presets (Easy 160, Tempo 170, Race 175, Speed 180, Fast 185) in 3+2 grid above slider
+  - BPM slider with large display (130–210)
   - Volume slider with percentage display
   - Audio mode selector (Media/Notification)
   - Large Play/Pause FAB
@@ -196,7 +196,6 @@ User can switch between sounds via FilterChip selector in UI.
 ### 🔄 Not Yet Implemented:
 - DataStore settings persistence (defaults reset on every app restart)
 - Runtime POST_NOTIFICATIONS permission request (Android 13+)
-- Named running-focused presets ("Easy Run", "Tempo Run", etc.)
 - Release build configuration (signing, ProGuard)
 
 ## Development Notes
