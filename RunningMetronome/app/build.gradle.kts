@@ -60,6 +60,9 @@ dependencies {
     // Media (for notification MediaStyle)
     implementation(libs.androidx.media)
 
+    // DataStore
+    implementation(libs.datastore.preferences)
+
     // Unit Testing
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)

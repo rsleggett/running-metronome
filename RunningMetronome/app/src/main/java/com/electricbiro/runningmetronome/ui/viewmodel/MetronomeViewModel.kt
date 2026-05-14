@@ -1,19 +1,23 @@
 package com.electricbiro.runningmetronome.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.electricbiro.runningmetronome.data.model.AudioUsageType
 import com.electricbiro.runningmetronome.data.model.MetronomeSoundEnum
+import com.electricbiro.runningmetronome.data.repository.PersistedSettings
+import com.electricbiro.runningmetronome.data.repository.SettingsRepository
 import com.electricbiro.runningmetronome.service.MetronomeService
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-/**
- * UI state for the metronome screen
- */
 data class MetronomeUiState(
     val isPlaying: Boolean = false,
     val bpm: Int = 175,
@@ -22,47 +26,66 @@ data class MetronomeUiState(
     val audioUsageType: AudioUsageType = AudioUsageType.MEDIA
 )
 
-/**
- * ViewModel for managing metronome playback and settings.
- * Handles all business logic and exposes UI state via StateFlow.
- * Controls the MetronomeService for background playback.
- */
 @HiltViewModel
-class MetronomeViewModel @Inject constructor() : ViewModel() {
+class MetronomeViewModel @Inject constructor(
+    private val repository: SettingsRepository
+) : ViewModel() {
 
     private val _uiState = MutableStateFlow(MetronomeUiState())
     val uiState: StateFlow<MetronomeUiState> = _uiState.asStateFlow()
 
     private var service: MetronomeService? = null
+    private var pendingSettings: PersistedSettings? = null
+    private var saveJob: Job? = null
 
-    /**
-     * Bind the service to the ViewModel
-     */
+    init {
+        viewModelScope.launch {
+            val settings = repository.settings.first()
+            pendingSettings = settings
+            // Apply to service if it was already bound before settings loaded
+            service?.let { applyPersistedSettings(it, settings) }
+        }
+    }
+
     fun bindService(service: MetronomeService) {
         this.service = service
-        // Sync state FROM service — it's the source of truth, especially when
-        // the app is opened from the notification while the service is already playing.
+        val persisted = pendingSettings
+        if (persisted != null) {
+            applyPersistedSettings(service, persisted)
+        } else {
+            // Settings not loaded yet — use service defaults for now;
+            // the init coroutine will apply persisted values when it finishes
+            _uiState.update { state ->
+                state.copy(
+                    isPlaying = service.isPlaying.value,
+                    bpm = service.bpm.value,
+                    volume = service.volume.value,
+                    sound = service.sound.value,
+                    audioUsageType = service.audioUsageType.value
+                )
+            }
+        }
+    }
+
+    private fun applyPersistedSettings(service: MetronomeService, settings: PersistedSettings) {
+        service.setBpm(settings.bpm)
+        service.setVolume(settings.volume)
+        service.setAudioUsageType(settings.audioUsageType)
         _uiState.update { state ->
             state.copy(
                 isPlaying = service.isPlaying.value,
-                bpm = service.bpm.value,
-                volume = service.volume.value,
+                bpm = settings.bpm,
+                volume = settings.volume,
                 sound = service.sound.value,
-                audioUsageType = service.audioUsageType.value
+                audioUsageType = settings.audioUsageType
             )
         }
     }
 
-    /**
-     * Unbind the service from the ViewModel
-     */
     fun unbindService() {
         service = null
     }
 
-    /**
-     * Toggle play/pause state
-     */
     fun togglePlayPause() {
         service?.let {
             if (_uiState.value.isPlaying) {
@@ -75,37 +98,44 @@ class MetronomeViewModel @Inject constructor() : ViewModel() {
         }
     }
 
-    /**
-     * Update BPM setting
-     */
     fun setBpm(bpm: Float) {
         val bpmInt = bpm.toInt()
         service?.setBpm(bpmInt)
         _uiState.update { it.copy(bpm = bpmInt) }
+        scheduleSave()
     }
 
-    /**
-     * Update volume setting
-     */
     fun setVolume(volume: Float) {
         val volumeInt = volume.toInt()
         service?.setVolume(volumeInt)
         _uiState.update { it.copy(volume = volumeInt) }
+        scheduleSave()
     }
 
-    /**
-     * Change the metronome sound
-     */
     fun setSound(sound: MetronomeSoundEnum) {
         service?.setSound(sound)
         _uiState.update { it.copy(sound = sound) }
+        scheduleSave()
     }
 
-    /**
-     * Change the audio usage type
-     */
     fun setAudioUsageType(usageType: AudioUsageType) {
         service?.setAudioUsageType(usageType)
         _uiState.update { it.copy(audioUsageType = usageType) }
+        scheduleSave()
+    }
+
+    private fun scheduleSave() {
+        saveJob?.cancel()
+        saveJob = viewModelScope.launch {
+            delay(500)
+            val state = _uiState.value
+            repository.save(
+                PersistedSettings(
+                    bpm = state.bpm,
+                    volume = state.volume,
+                    audioUsageType = state.audioUsageType,
+                )
+            )
+        }
     }
 }
