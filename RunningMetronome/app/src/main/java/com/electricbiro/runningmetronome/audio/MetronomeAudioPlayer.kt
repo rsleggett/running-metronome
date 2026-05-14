@@ -100,13 +100,10 @@ class MetronomeAudioPlayer(context: Context) {
         playbackJob = CoroutineScope(Dispatchers.Default).launch {
             Log.d(TAG, "Playback coroutine started")
 
-            // Calculate delay based on BPM (beats per minute)
-            // 60000 ms in a minute / BPM = milliseconds per beat
-            val intervalMs = (60000.0 / currentBpm).toLong()
-
             while (isActive && isPlaying) {
                 playBeat()
-                delay(intervalMs)
+                // Re-read currentBpm each beat so live BPM changes take effect immediately.
+                delay((60000.0 / currentBpm).toLong())
             }
             Log.d(TAG, "Playback coroutine ended")
         }
