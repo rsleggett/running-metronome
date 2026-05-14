@@ -158,62 +158,46 @@ User can switch between sounds via FilterChip selector in UI.
 
 ## Current Implementation Status
 
-**Phase**: Simplified MVP - Pattern Mode Removed, Ready for Settings Persistence
+**Phase**: Working MVP (May 2026)
 
 ### ✅ Implemented:
 - **Hilt DI**: Complete setup with `@HiltAndroidApp` and `@AndroidEntryPoint`
-- **Audio Playback**: Simplified `MetronomeAudioPlayer` implementation with SoundPool
-  - Support for all 6 sound types
+- **Audio Playback**: `MetronomeAudioPlayer` using SoundPool
+  - BPM range: 40–200, live changes take effect on next beat
   - Switchable audio modes (Media/Notification)
-  - Volume control (0-100%)
-  - BPM range: 40-200
-  - Simple metronome with consistent beat
+  - Volume control (0–100%)
   - Debug logging for troubleshooting
 - **Background Service**: `MetronomeService` foreground service
-  - Persistent notification with Play/Pause/Stop controls
-  - Continues playing when app is minimized
-  - Works with screen off
+  - Persistent notification with Play/Pause control (no Stop button)
+  - `ic_notification` music-note small icon, `ic_play`/`ic_pause` action icons
+  - Continues playing when app is minimized or screen is off
   - MediaStyle notification
-- **UI**: Simplified Material 3 Compose interface
-  - BPM slider with large display (40-200 range)
+- **UI**: Material 3 Compose interface
+  - BPM slider with large display (40–200)
   - BPM quick presets (160, 170, 175, 180, 185)
   - Volume slider with percentage display
-  - Sound selector (6 sounds via FilterChips)
   - Audio mode selector (Media/Notification)
   - Large Play/Pause FAB
   - Scrollable layout
-- **MVVM**: Simplified architecture implementation
-  - `MetronomeViewModel` with StateFlow
-  - Service binding and lifecycle management
-  - Proper state management
-- **Testing**: Streamlined test coverage
-  - **Unit Tests** (~50 tests passing):
-    - `MetronomeAudioPlayerTest`: 32 tests for audio playback (Robolectric)
-    - `MetronomeViewModelTest`: 18 tests for ViewModel state management
-  - Test dependencies: JUnit 4, Mockito-Kotlin, Robolectric, Hilt Testing
-- **Permissions**: All required permissions in manifest
-  - `FOREGROUND_SERVICE`
-  - `FOREGROUND_SERVICE_MEDIA_PLAYBACK`
-  - `POST_NOTIFICATIONS`
-- **Development Tools**:
-  - `run-app.sh` - Helper script for building and launching
-  - `RUNNING_THE_APP.md` - Comprehensive running guide
-  - `EMULATOR_AUDIO_FIX.md` - Emulator audio troubleshooting
+- **MVVM**: `MetronomeViewModel` syncs state FROM the service on bind — service is source of truth for `isPlaying`, `bpm`, `volume`, `sound`, `audioUsageType`
+- **Custom App Icon**: Indigo gradient background, white metronome body, coral/orange pendulum
+- **Testing**: ~54 unit tests passing
+  - `MetronomeAudioPlayerTest`: 32 tests (Robolectric)
+  - `MetronomeViewModelTest`: 22 tests including bind-time state sync regression tests
+- **Permissions**: `FOREGROUND_SERVICE`, `FOREGROUND_SERVICE_MEDIA_PLAYBACK`, `POST_NOTIFICATIONS` in manifest
 
 ### ✅ Verified Working:
-- App runs successfully on emulator (Pixel_Fold_API_35)
-- Audio playback working (after emulator cold boot)
-- All UI controls functional
-- Background service working
+- App runs on Pixel_9_Pro emulator
+- Audio playback working (cold boot required on first emulator use)
+- Live BPM changes work while playing
+- Notification play/pause syncs correctly with app UI
 - All unit tests passing
 
 ### 🔄 Not Yet Implemented:
-- DataStore repository for settings persistence (currently defaults on restart)
-- Runtime notification permission request for Android 13+
+- DataStore settings persistence (defaults reset on every app restart)
+- Runtime POST_NOTIFICATIONS permission request (Android 13+)
 - Named running-focused presets ("Easy Run", "Tempo Run", etc.)
-- Workout interval features
-- Release build configuration (signing, ProGuard rules)
-- App icon and branding
+- Release build configuration (signing, ProGuard)
 
 ## Development Notes
 
