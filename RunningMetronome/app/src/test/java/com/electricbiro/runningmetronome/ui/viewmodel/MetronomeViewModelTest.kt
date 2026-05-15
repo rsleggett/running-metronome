@@ -2,6 +2,8 @@ package com.electricbiro.runningmetronome.ui.viewmodel
 
 import com.electricbiro.runningmetronome.data.model.AudioUsageType
 import com.electricbiro.runningmetronome.data.model.MetronomeSoundEnum
+import com.electricbiro.runningmetronome.data.model.Preset
+import com.electricbiro.runningmetronome.data.model.RunningLevel
 import com.electricbiro.runningmetronome.data.repository.PersistedSettings
 import com.electricbiro.runningmetronome.data.repository.SettingsRepository
 import com.electricbiro.runningmetronome.service.MetronomeService
@@ -302,5 +304,99 @@ class MetronomeViewModelTest {
         viewModel.setBpm(190f)
 
         assertEquals(190, viewModel.uiState.value.bpm)
+    }
+
+    // Preset Tests
+
+    @Test
+    fun `setPreset updates bpm in UI state`() {
+        val preset = Preset("race", "Race", 180)
+        viewModel.setPreset(preset)
+        assertEquals(180, viewModel.uiState.value.bpm)
+    }
+
+    @Test
+    fun `setPreset calls service setBpm`() {
+        val preset = Preset("race", "Race", 180)
+        viewModel.setPreset(preset)
+        verify(mockService).setBpm(180)
+    }
+
+    @Test
+    fun `setPreset sets activePresetId`() {
+        val preset = Preset("sprint", "Sprint", 190)
+        viewModel.setPreset(preset)
+        assertEquals("sprint", viewModel.uiState.value.activePresetId)
+    }
+
+    @Test
+    fun `setBpm clears activePresetId when bpm does not match any preset`() {
+        viewModel.setBpm(177f) // not a preset BPM
+        assertNull(viewModel.uiState.value.activePresetId)
+    }
+
+    @Test
+    fun `setBpm sets activePresetId when bpm matches a preset`() {
+        // Default CASUAL presets include Race=175
+        viewModel.setBpm(175f)
+        assertEquals("race", viewModel.uiState.value.activePresetId)
+    }
+
+    // Running level / refreshPresets tests
+
+    @Test
+    fun `applyPersistedSettings loads presets from running level`() {
+        val repo = stubRepository(
+            PersistedSettings(bpm = 180, runningLevel = RunningLevel.REGULAR)
+        )
+        val service = mock<MetronomeService>()
+        stubServiceStateFlows(service)
+        val vm = MetronomeViewModel(repo)
+        vm.bindService(service)
+
+        val expectedPresets = RunningLevel.REGULAR.presets
+        assertEquals(expectedPresets, vm.uiState.value.presets)
+    }
+
+    @Test
+    fun `applyPersistedSettings sets activePresetId matching persisted bpm`() {
+        val repo = stubRepository(
+            PersistedSettings(bpm = 180, runningLevel = RunningLevel.REGULAR)
+        )
+        val service = mock<MetronomeService>()
+        stubServiceStateFlows(service)
+        val vm = MetronomeViewModel(repo)
+        vm.bindService(service)
+
+        // REGULAR race preset is 180 BPM with id "race"
+        assertEquals("race", vm.uiState.value.activePresetId)
+    }
+
+    @Test
+    fun `applyPersistedSettings sets activePresetId to null when bpm not in presets`() {
+        val repo = stubRepository(
+            PersistedSettings(bpm = 177, runningLevel = RunningLevel.REGULAR)
+        )
+        val service = mock<MetronomeService>()
+        stubServiceStateFlows(service)
+        val vm = MetronomeViewModel(repo)
+        vm.bindService(service)
+
+        assertNull(vm.uiState.value.activePresetId)
+    }
+
+    @Test
+    fun `refreshPresets reloads presets from repository`() {
+        val repo = stubRepository(
+            PersistedSettings(bpm = 185, runningLevel = RunningLevel.COMPETITIVE)
+        )
+        val vm = MetronomeViewModel(repo)
+        val service = mock<MetronomeService>()
+        stubServiceStateFlows(service)
+        vm.bindService(service)
+
+        vm.refreshPresets()
+
+        assertEquals(RunningLevel.COMPETITIVE.presets, vm.uiState.value.presets)
     }
 }
