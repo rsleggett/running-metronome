@@ -16,8 +16,10 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -55,14 +57,19 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.BlendMode
+import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.electricbiro.runningmetronome.data.model.AudioUsageType
@@ -195,10 +202,10 @@ fun MainScreen(
         }
     }
 
-    // Coachmark target positions (captured from layout)
-    var presetsTop by remember { mutableStateOf(0) }
-    var sliderTop by remember { mutableStateOf(0) }
-    var playTop by remember { mutableStateOf(0) }
+    // Coachmark target bounds (captured from layout, in root px)
+    var presetsRect by remember { mutableStateOf(Rect.Zero) }
+    var sliderRect by remember { mutableStateOf(Rect.Zero) }
+    var playRect by remember { mutableStateOf(Rect.Zero) }
 
     Box(modifier = Modifier.fillMaxSize()) {
         Column(
@@ -306,7 +313,7 @@ fun MainScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .onGloballyPositioned { coords ->
-                        presetsTop = coords.positionInRoot().y.toInt()
+                        presetsRect = coords.boundsInRoot()
                     },
                 verticalArrangement = Arrangement.spacedBy(6.dp),
             ) {
@@ -336,7 +343,7 @@ fun MainScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .onGloballyPositioned { coords ->
-                        sliderTop = coords.positionInRoot().y.toInt()
+                        sliderRect = coords.boundsInRoot()
                     },
             ) {
                 Row(
@@ -374,7 +381,7 @@ fun MainScreen(
                 modifier = Modifier
                     .size(70.dp)
                     .onGloballyPositioned { coords ->
-                        playTop = coords.positionInRoot().y.toInt()
+                        playRect = coords.boundsInRoot()
                     }
                     .clip(CircleShape)
                     .background(if (uiState.isPlaying) BgElev else Accent)
@@ -477,9 +484,9 @@ fun MainScreen(
         if (tourStep in 0..2) {
             CoachmarkTour(
                 step = tourStep,
-                presetsTop = presetsTop,
-                sliderTop = sliderTop,
-                playTop = playTop,
+                presetsRect = presetsRect,
+                sliderRect = sliderRect,
+                playRect = playRect,
                 onNext = onTourNext,
             )
         }
@@ -560,93 +567,134 @@ private val tourCopy = listOf(
 @Composable
 private fun CoachmarkTour(
     step: Int,
-    presetsTop: Int,
-    sliderTop: Int,
-    playTop: Int,
+    presetsRect: Rect,
+    sliderRect: Rect,
+    playRect: Rect,
     onNext: () -> Unit,
 ) {
     val density = LocalDensity.current
-    val targetYDp = with(density) {
-        when (step) {
-            0 -> presetsTop.toDp()
-            1 -> sliderTop.toDp()
-            else -> playTop.toDp()
-        }
+    val targetRect = when (step) {
+        0 -> presetsRect
+        1 -> sliderRect
+        else -> playRect
     }
-    // Position tooltip above the target element, with a minimum top offset
-    val tooltipOffsetDp = (targetYDp - 150.dp).coerceAtLeast(60.dp)
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color(0x8C080B12)),
-    ) {
-        val tooltipWidth = if (step == 2) 230.dp else 240.dp
+    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+        val screenWidthDp = maxWidth
 
-        Column(
+        // Scrim with transparent punch-out over the highlighted element
+        Canvas(
             modifier = Modifier
-                .padding(start = if (step == 2) 36.dp else 20.dp, top = tooltipOffsetDp)
-                .width(tooltipWidth)
-                .clip(RoundedCornerShape(12.dp))
-                .background(Accent)
-                .padding(horizontal = 14.dp, vertical = 12.dp),
+                .fillMaxSize()
+                .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen },
         ) {
-            // Arrow tip pointing down toward target
-            Box(
+            drawRect(color = Color(0x8C080B12))
+            if (targetRect != Rect.Zero) {
+                val hPad = 10.dp.toPx()
+                val vPad = 8.dp.toPx()
+                drawRoundRect(
+                    color = Color.Transparent,
+                    topLeft = Offset(targetRect.left - hPad, targetRect.top - vPad),
+                    size = Size(targetRect.width + hPad * 2, targetRect.height + vPad * 2),
+                    cornerRadius = CornerRadius(16.dp.toPx()),
+                    blendMode = BlendMode.Clear,
+                )
+            }
+        }
+
+        if (targetRect != Rect.Zero) {
+            val tooltipWidth = 248.dp
+            val targetTopDp = with(density) { targetRect.top.toDp() }
+            val targetCenterXDp = with(density) { targetRect.center.x.toDp() }
+
+            // Center tooltip over the target; clamp to screen edges
+            val tooltipStartDp = (targetCenterXDp - tooltipWidth / 2)
+                .coerceIn(12.dp, screenWidthDp - tooltipWidth - 12.dp)
+
+            // Place tooltip above target; fall back to below if near the top
+            val spaceAbove = targetTopDp - 12.dp  // available above punch-out
+            val tooltipEstimatedHeight = 120.dp
+            val arrowSize = 10.dp
+            val aboveTop = targetTopDp - tooltipEstimatedHeight - arrowSize - 16.dp
+            val belowTop = with(density) { (targetRect.bottom).toDp() } + 16.dp + arrowSize
+            val placeAbove = spaceAbove >= tooltipEstimatedHeight + arrowSize + 16.dp
+            val tooltipTopDp = if (placeAbove) aboveTop.coerceAtLeast(60.dp) else belowTop
+
+            Column(
                 modifier = Modifier
-                    .padding(start = 10.dp)
-                    .size(14.dp)
-                    .clip(RoundedCornerShape(2.dp))
-                    .background(Accent)
-                    .graphicsLayer { rotationZ = 45f }
-                    .align(Alignment.Start),
-            )
-
-            Spacer(Modifier.height(4.dp))
-
-            Text(
-                text = tourCopy[step],
-                color = OnAccent,
-                style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold),
-            )
-
-            Spacer(Modifier.height(10.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
+                    .padding(start = tooltipStartDp, top = tooltipTopDp)
+                    .width(tooltipWidth),
+                horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                // Tour progress dots
-                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                    repeat(3) { i ->
+                // Arrow pointing toward the highlighted element
+                if (!placeAbove) {
+                    Box(
+                        modifier = Modifier
+                            .size(arrowSize)
+                            .graphicsLayer { rotationZ = 45f }
+                            .background(Accent)
+                    )
+                    Spacer(Modifier.height(2.dp))
+                }
+
+                // Tooltip card
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(Accent)
+                        .padding(horizontal = 14.dp, vertical = 12.dp),
+                ) {
+                    Text(
+                        text = tourCopy[step],
+                        color = OnAccent,
+                        style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold),
+                    )
+                    Spacer(Modifier.height(10.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                            repeat(3) { i ->
+                                Box(
+                                    modifier = Modifier
+                                        .width(if (i == step) 16.dp else 6.dp)
+                                        .height(6.dp)
+                                        .clip(RoundedCornerShape(4.dp))
+                                        .background(if (i == step) OnAccent else OnAccent.copy(alpha = 0.3f)),
+                                )
+                            }
+                        }
                         Box(
+                            contentAlignment = Alignment.Center,
                             modifier = Modifier
-                                .width(if (i == step) 16.dp else 6.dp)
-                                .height(6.dp)
-                                .clip(RoundedCornerShape(4.dp))
-                                .background(if (i == step) OnAccent else OnAccent.copy(alpha = 0.3f)),
-                        )
+                                .clip(CircleShape)
+                                .background(OnAccent)
+                                .clickable(onClick = onNext)
+                                .padding(horizontal = 14.dp, vertical = 6.dp),
+                        ) {
+                            Text(
+                                text = if (step == 2) "START RUNNING" else "NEXT",
+                                color = Accent,
+                                style = MaterialTheme.typography.labelSmall.copy(
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 12.sp,
+                                    letterSpacing = 0.5.sp,
+                                ),
+                            )
+                        }
                     }
                 }
 
-                // Next / Start running button
-                Box(
-                    contentAlignment = Alignment.Center,
-                    modifier = Modifier
-                        .clip(CircleShape)
-                        .background(OnAccent)
-                        .clickable(onClick = onNext)
-                        .padding(horizontal = 14.dp, vertical = 6.dp),
-                ) {
-                    Text(
-                        text = if (step == 2) "START RUNNING" else "NEXT",
-                        color = Accent,
-                        style = MaterialTheme.typography.labelSmall.copy(
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 12.sp,
-                            letterSpacing = 0.5.sp,
-                        ),
+                if (placeAbove) {
+                    Spacer(Modifier.height(2.dp))
+                    Box(
+                        modifier = Modifier
+                            .size(arrowSize)
+                            .graphicsLayer { rotationZ = 45f }
+                            .background(Accent)
                     )
                 }
             }

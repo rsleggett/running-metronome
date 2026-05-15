@@ -10,7 +10,9 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 enum class OnboardingStep { WELCOME, LEVEL_SELECT, PERMISSION, APP }
@@ -21,6 +23,7 @@ data class OnboardingUiState(
     val tourStep: Int = 0,   // 0..2 active tour, -1 = tour done
     val isComplete: Boolean = false,
     val isLoading: Boolean = true,
+    val isReset: Boolean = false, // true when navigating from settings, suppresses tour
 )
 
 @HiltViewModel
@@ -35,7 +38,8 @@ class OnboardingViewModel @Inject constructor(
         viewModelScope.launch {
             val settings = repository.settings.first()
             if (settings.onboardingComplete) {
-                _state.update { it.copy(isComplete = true, isLoading = false) }
+                // tourStep = -1 so the coachmark never shows on a returning open
+                _state.update { it.copy(isComplete = true, isLoading = false, tourStep = -1) }
             } else {
                 _state.update { it.copy(isLoading = false) }
             }
@@ -57,14 +61,15 @@ class OnboardingViewModel @Inject constructor(
     fun goToPermission() = _state.update { it.copy(step = OnboardingStep.PERMISSION) }
 
     fun skip() {
-        viewModelScope.launch { repository.completeOnboarding(RunningLevel.CASUAL) }
+        viewModelScope.launch { withContext(NonCancellable) { repository.completeOnboarding(RunningLevel.CASUAL) } }
         _state.update { it.copy(isComplete = true, tourStep = -1) }
     }
 
     fun finishPermissionStep() {
         val level = _state.value.selectedLevel ?: RunningLevel.CASUAL
-        viewModelScope.launch { repository.completeOnboarding(level) }
-        _state.update { it.copy(step = OnboardingStep.APP, tourStep = 0) }
+        val skipTour = _state.value.isReset
+        viewModelScope.launch { withContext(NonCancellable) { repository.completeOnboarding(level) } }
+        _state.update { it.copy(step = OnboardingStep.APP, tourStep = if (skipTour) -1 else 0, isReset = false) }
     }
 
     fun nextTourStep() {
@@ -83,6 +88,7 @@ class OnboardingViewModel @Inject constructor(
                 isComplete = false,
                 selectedLevel = null,
                 tourStep = 0,
+                isReset = true,
             )
         }
     }

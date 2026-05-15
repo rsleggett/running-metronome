@@ -58,6 +58,12 @@ class OnboardingViewModelTest {
     }
 
     @Test
+    fun `tourStep is -1 on init when onboarding already complete`() {
+        val vm = makeViewModel(onboardingComplete = true)
+        assertEquals(-1, vm.state.value.tourStep)
+    }
+
+    @Test
     fun `initial selectedLevel is null`() {
         val vm = makeViewModel()
         assertNull(vm.state.value.selectedLevel)
@@ -161,10 +167,26 @@ class OnboardingViewModelTest {
     }
 
     @Test
-    fun `finishPermissionStep sets tourStep to 0`() {
+    fun `finishPermissionStep sets tourStep to 0 on first run`() {
         val vm = makeViewModel()
         vm.finishPermissionStep()
         assertEquals(0, vm.state.value.tourStep)
+    }
+
+    @Test
+    fun `finishPermissionStep sets tourStep to -1 when isReset`() {
+        val vm = makeViewModel()
+        vm.resetOnboarding()
+        vm.finishPermissionStep()
+        assertEquals(-1, vm.state.value.tourStep)
+    }
+
+    @Test
+    fun `finishPermissionStep clears isReset flag`() {
+        val vm = makeViewModel()
+        vm.resetOnboarding()
+        vm.finishPermissionStep()
+        assertFalse(vm.state.value.isReset)
     }
 
     // Skip
@@ -235,6 +257,13 @@ class OnboardingViewModelTest {
         val vm = makeViewModel(onboardingComplete = true)
         vm.resetOnboarding()
         assertEquals(OnboardingStep.LEVEL_SELECT, vm.state.value.step)
+    }
+
+    @Test
+    fun `resetOnboarding sets isReset flag`() {
+        val vm = makeViewModel()
+        vm.resetOnboarding()
+        assertTrue(vm.state.value.isReset)
     }
 
     @Test
