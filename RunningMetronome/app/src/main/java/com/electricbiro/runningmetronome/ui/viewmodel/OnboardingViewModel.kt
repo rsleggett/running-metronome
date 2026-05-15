@@ -68,8 +68,12 @@ class OnboardingViewModel @Inject constructor(
     fun finishPermissionStep() {
         val level = _state.value.selectedLevel ?: RunningLevel.CASUAL
         val skipTour = _state.value.isReset
-        viewModelScope.launch { withContext(NonCancellable) { repository.completeOnboarding(level) } }
-        _state.update { it.copy(step = OnboardingStep.APP, tourStep = if (skipTour) -1 else 0, isReset = false) }
+        viewModelScope.launch {
+            withContext(NonCancellable) { repository.completeOnboarding(level) }
+            // State update happens only after the DataStore write completes, so
+            // refreshPresets() in AppRoot will always read the newly-saved level.
+            _state.update { it.copy(step = OnboardingStep.APP, tourStep = if (skipTour) -1 else 0, isReset = false) }
+        }
     }
 
     fun nextTourStep() {

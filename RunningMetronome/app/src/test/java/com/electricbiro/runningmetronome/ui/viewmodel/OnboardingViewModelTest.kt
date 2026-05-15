@@ -87,7 +87,7 @@ class OnboardingViewModelTest {
     }
 
     @Test
-    fun `finishPermissionStep advances to APP`() {
+    fun `finishPermissionStep advances to APP`() = runTest {
         val vm = makeViewModel()
         vm.goToLevelSelect()
         vm.selectLevel(RunningLevel.REGULAR)
@@ -167,14 +167,14 @@ class OnboardingViewModelTest {
     }
 
     @Test
-    fun `finishPermissionStep sets tourStep to 0 on first run`() {
+    fun `finishPermissionStep sets tourStep to 0 on first run`() = runTest {
         val vm = makeViewModel()
         vm.finishPermissionStep()
         assertEquals(0, vm.state.value.tourStep)
     }
 
     @Test
-    fun `finishPermissionStep sets tourStep to -1 when isReset`() {
+    fun `finishPermissionStep sets tourStep to -1 when isReset`() = runTest {
         val vm = makeViewModel()
         vm.resetOnboarding()
         vm.finishPermissionStep()
@@ -182,7 +182,7 @@ class OnboardingViewModelTest {
     }
 
     @Test
-    fun `finishPermissionStep clears isReset flag`() {
+    fun `finishPermissionStep clears isReset flag`() = runTest {
         val vm = makeViewModel()
         vm.resetOnboarding()
         vm.finishPermissionStep()
