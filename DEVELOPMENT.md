@@ -3,10 +3,11 @@
 ## Tech Stack
 
 - **Language**: Kotlin
-- **UI**: Jetpack Compose with Material Design 3
+- **UI**: Jetpack Compose + Material Design 3 (dark-only theme)
 - **Architecture**: MVVM (Model-View-ViewModel)
 - **DI**: Hilt
 - **Audio**: SoundPool (low-latency, mixes with other apps)
+- **Persistence**: Jetpack DataStore (Preferences)
 - **Async**: Kotlin Coroutines + StateFlow
 - **Build**: Gradle Kotlin DSL with Version Catalogs
 - **Min SDK**: Android 8.0 (API 26) | **Target SDK**: API 36
@@ -15,19 +16,29 @@
 
 ```
 RunningMetronome/app/src/main/java/com/electricbiro/runningmetronome/
-├── MainActivity.kt          # Single activity — Compose host + service binding
+├── MainActivity.kt             # Single activity — Compose host, service binding, AppRoot routing
 ├── audio/
-│   └── MetronomeAudioPlayer.kt   # SoundPool engine, BPM timing coroutine
-├── data/model/
-│   └── SettingsModel.kt     # MetronomeSoundEnum, AudioUsageType
+│   └── MetronomeAudioPlayer.kt # SoundPool engine, BPM timing coroutine
+├── data/
+│   ├── model/
+│   │   ├── SettingsModel.kt    # MetronomeSoundEnum, AudioUsageType
+│   │   └── RunningLevel.kt     # RunningLevel enum (4 levels), Preset data class
+│   └── repository/
+│       └── SettingsRepository.kt  # DataStore persistence (BPM, volume, audio mode, level, onboarding flag)
 ├── di/
-│   └── AppModule.kt         # Hilt singleton providers
+│   └── AppModule.kt            # Hilt singleton providers (DataStore, SettingsRepository)
 ├── service/
-│   └── MetronomeService.kt  # Foreground service, notification, StateFlow state
+│   └── MetronomeService.kt     # Foreground service, notification, StateFlow state
 └── ui/
-    ├── theme/               # Material 3 theme
+    ├── onboarding/
+    │   └── OnboardingScreen.kt # Welcome, LevelSelect, Permission screens + shared components
+    ├── theme/
+    │   ├── Color.kt            # Design tokens (Accent, BgBase, BgCard, TextPrimary, etc.)
+    │   ├── Theme.kt            # Dark-only MaterialTheme
+    │   └── Type.kt             # Typography scale
     └── viewmodel/
-        └── MetronomeViewModel.kt  # UI state (StateFlow), delegates to service
+        ├── MetronomeViewModel.kt   # UI state (StateFlow), delegates to service + repository
+        └── OnboardingViewModel.kt  # Onboarding step state machine, level selection, tour steps
 ```
 
 ## Build & Run
@@ -55,14 +66,14 @@ cd RunningMetronome && ./run-app.sh
 # List available emulators
 ~/Library/Android/sdk/emulator/emulator -list-avds
 
-# Start (currently Pixel_9_Pro)
+# Start (Pixel_9_Pro_API_36)
 ~/Library/Android/sdk/emulator/emulator -avd Pixel_9_Pro &
 
 # Wait for boot
 adb shell getprop sys.boot_completed   # 1 = ready
 ```
 
-> **Audio on emulator**: If sound doesn't play, do a cold boot — in Android Studio Device Manager select Pixel_9_Pro → Cold Boot Now. Warm boots sometimes skip audio initialisation.
+> **Audio on emulator**: If sound doesn't play, do a cold boot — in Android Studio Device Manager select the AVD → Cold Boot Now. Warm boots sometimes skip audio initialisation.
 
 ### Troubleshooting
 
@@ -71,17 +82,36 @@ adb shell getprop sys.boot_completed   # 1 = ready
 | No devices found | `adb kill-server && adb start-server` |
 | Install fails (signature mismatch) | `./gradlew uninstallAll && ./gradlew installDebug` |
 | App crashes on launch | `adb logcat \| grep -E "AndroidRuntime\|FATAL"` |
-| Multiple devices connected | `export ANDROID_SERIAL=<serial>` then run as normal |
+| Multiple devices connected | `adb -s <serial> shell am start ...` or `export ANDROID_SERIAL=<serial>` |
+| Onboarding shows again after reinstall | DataStore is cleared on uninstall — expected behaviour |
 
 ## Architecture Notes
 
+### Routing: AppRoot
+
+`AppRoot` in `MainActivity.kt` is the single routing composable. It reads `OnboardingUiState` and routes to:
+- Loading splash (while DataStore is read on first frame)
+- `OnboardingScreen` (first run — step is WELCOME, LEVEL_SELECT, or PERMISSION)
+- `MainScreen` with coachmark tour overlay (step is APP, tourStep 0–2)
+- `MainScreen` without tour (tourStep = -1, isComplete = true)
+
+When the user taps the settings icon on the main screen, `OnboardingViewModel.resetOnboarding()` is called, setting `isComplete = false` and routing back to Level Select so they can change their running level.
+
 ### Service is the source of truth
 
-`MetronomeService` holds the authoritative state (`isPlaying`, `bpm`, `volume`, `sound`, `audioUsageType`) as `StateFlow` properties. When `MainActivity` binds to the service, `MetronomeViewModel.bindService()` reads all state FROM the service — it does not push ViewModel defaults to the service. This is important: if the app is opened from the notification while the service is already playing, the ViewModel immediately reflects the correct `isPlaying = true` state.
+`MetronomeService` holds authoritative playback state (`isPlaying`, `bpm`, `volume`, `sound`, `audioUsageType`) as `StateFlow` properties. When `MainActivity` binds to the service, `MetronomeViewModel.bindService()` reads all state FROM the service — it does not push ViewModel defaults to the service. This matters when the app is opened from the notification while the service is already playing: the ViewModel immediately reflects the correct `isPlaying = true` state.
+
+### Settings persistence
+
+`SettingsRepository` reads/writes BPM, volume, audio mode, running level, and onboarding-complete flag via DataStore Preferences. On cold start, `MetronomeViewModel.init` reads the persisted settings and stashes them as `pendingSettings`; when `bindService()` is called, `applyPersistedSettings()` pushes them to the service and updates UI state. This handles the race between DataStore reads and service binding.
+
+### Running levels and presets
+
+`RunningLevel` is a Kotlin enum with four entries (NEW, CASUAL, REGULAR, COMPETITIVE). Each holds a `List<Preset>` of six BPM checkpoints suited to that runner profile. The selected level is persisted in DataStore. `MetronomeViewModel.refreshPresets()` should be called after onboarding completes to load the newly-selected level's presets.
 
 ### BPM timing
 
-The playback coroutine in `MetronomeAudioPlayer` re-reads `currentBpm` on every beat (`delay((60000.0 / currentBpm).toLong())`). Changes take effect on the next beat (up to one full interval lag, max ~1.5s at 40 BPM — acceptable for a running cadence app).
+The playback coroutine in `MetronomeAudioPlayer` re-reads `currentBpm` on every beat (`delay((60000.0 / currentBpm).toLong())`). Changes take effect on the next beat (up to one full interval lag, max ~460ms at 130 BPM — acceptable for a running cadence app).
 
 ### Audio modes
 
@@ -93,25 +123,41 @@ Switching audio mode requires recreating the `SoundPool`, which `MetronomeAudioP
 
 ### Notification
 
-The foreground notification shows the current BPM and sound name, with a single play/pause action button. It uses `MediaStyle`. The small icon is `ic_notification` (music note vector). Action button icons are `ic_play` / `ic_pause`. Request codes for `PendingIntent` are distinct (1 = play/pause) to avoid `FLAG_UPDATE_CURRENT` collisions.
+The foreground notification shows the current BPM and sound name with a play/pause action button (MediaStyle). The small icon is `ic_notification`. Action icons are `ic_play` / `ic_pause`. The notification permission is requested during onboarding via `ActivityResultContracts.RequestPermission` (Android 13+ only).
+
+### Theme
+
+The app uses a dark-only colour scheme (`darkColorScheme`). There is no light theme. Design tokens are defined in `ui/theme/Color.kt`:
+- `Accent` / `AccentSoft` / `AccentRim` — coral orange brand colour
+- `BgBase` / `BgCard` / `BgElev` — surface hierarchy
+- `TextPrimary` / `TextMute` / `TextDim` — text hierarchy
 
 ## Testing
 
 Unit tests live in `app/src/test/`:
-- `MetronomeViewModelTest` — ~22 tests covering state management, bind-time sync from service, and togglePlayPause behaviour
-- `MetronomeAudioPlayerTest` — ~32 tests using Robolectric
+
+| File | Tests | Coverage |
+|------|-------|----------|
+| `MetronomeAudioPlayerTest` | ~32 | SoundPool engine, Robolectric |
+| `MetronomeViewModelTest` | ~30 | State management, bind-time sync, presets, active preset ID |
+| `OnboardingViewModelTest` | ~22 | Step navigation, level selection, tour, resetOnboarding |
+| `RunningLevelTest` | ~12 | fromId, preset count/order/range/IDs |
 
 ```bash
+# Run all tests
 ./gradlew test
-./gradlew test --tests "com.electricbiro.runningmetronome.ui.viewmodel.MetronomeViewModelTest"
+
+# Run a specific test class
+./gradlew test --tests "com.electricbiro.runningmetronome.ui.viewmodel.OnboardingViewModelTest"
 ```
 
 ## Key Decisions & Known Issues
 
-| Area | Decision / Issue |
+| Area | Decision / Status |
 |------|-----------------|
-| Settings persistence | Not yet implemented — app resets to defaults (BPM 175, volume 75%, CLASSIC, MEDIA) on each launch. DataStore is the planned solution. |
-| Notification permission | `POST_NOTIFICATIONS` is declared in the manifest but not requested at runtime. On Android 13+ users must grant it manually. |
-| Sound selection | Six sounds are in `res/raw/` and `MetronomeSoundEnum` only has `CLASSIC`. The UI sound selector is present in code but hidden from the current screen layout. |
-| Instrumented tests | Test files exist in `src/androidTest/` but have not been run recently and may be out of date. |
-| KAPT | Hilt uses KAPT (with a Kotlin 2.0 fallback warning). Migrate to KSP when Hilt support is stable. |
+| Settings persistence | ✅ Implemented via DataStore — BPM, volume, audio mode, running level all persist |
+| Notification permission | ✅ Requested at runtime during the Permission onboarding screen (Android 13+) |
+| Sound selection | Six sounds in `res/raw/` but only `CLASSIC` is used — sound selector UI is not exposed |
+| Instrumented tests | Files exist in `src/androidTest/` but are not maintained — unit tests cover the critical paths |
+| KAPT | Hilt uses KAPT (with a Kotlin 2.0 fallback warning). Migrate to KSP when Hilt KSP support is stable. |
+| Edge-to-edge | `enableEdgeToEdge()` is set in `onCreate`. All screens apply `statusBarsPadding()` and `navigationBarsPadding()` on their outer container. |

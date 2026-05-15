@@ -19,6 +19,6 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "Running Metronome"
+rootProject.name = "RunTick"
 include(":app")
  

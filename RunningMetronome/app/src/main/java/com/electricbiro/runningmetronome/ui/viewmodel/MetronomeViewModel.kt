@@ -4,6 +4,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.electricbiro.runningmetronome.data.model.AudioUsageType
 import com.electricbiro.runningmetronome.data.model.MetronomeSoundEnum
+import com.electricbiro.runningmetronome.data.model.Preset
+import com.electricbiro.runningmetronome.data.model.RunningLevel
 import com.electricbiro.runningmetronome.data.repository.PersistedSettings
 import com.electricbiro.runningmetronome.data.repository.SettingsRepository
 import com.electricbiro.runningmetronome.service.MetronomeService
@@ -23,7 +25,9 @@ data class MetronomeUiState(
     val bpm: Int = 175,
     val volume: Int = 75,
     val sound: MetronomeSoundEnum = MetronomeSoundEnum.CLASSIC,
-    val audioUsageType: AudioUsageType = AudioUsageType.MEDIA
+    val audioUsageType: AudioUsageType = AudioUsageType.MEDIA,
+    val presets: List<Preset> = RunningLevel.CASUAL.presets,
+    val activePresetId: String? = "race",
 )
 
 @HiltViewModel
@@ -42,7 +46,7 @@ class MetronomeViewModel @Inject constructor(
         viewModelScope.launch {
             val settings = repository.settings.first()
             pendingSettings = settings
-            // Apply to service if it was already bound before settings loaded
+            _uiState.update { it.copy(presets = settings.runningLevel.presets) }
             service?.let { applyPersistedSettings(it, settings) }
         }
     }
@@ -53,15 +57,13 @@ class MetronomeViewModel @Inject constructor(
         if (persisted != null) {
             applyPersistedSettings(service, persisted)
         } else {
-            // Settings not loaded yet — use service defaults for now;
-            // the init coroutine will apply persisted values when it finishes
             _uiState.update { state ->
                 state.copy(
                     isPlaying = service.isPlaying.value,
                     bpm = service.bpm.value,
                     volume = service.volume.value,
                     sound = service.sound.value,
-                    audioUsageType = service.audioUsageType.value
+                    audioUsageType = service.audioUsageType.value,
                 )
             }
         }
@@ -71,14 +73,28 @@ class MetronomeViewModel @Inject constructor(
         service.setBpm(settings.bpm)
         service.setVolume(settings.volume)
         service.setAudioUsageType(settings.audioUsageType)
+        val presets = settings.runningLevel.presets
+        val activeId = presets.find { it.bpm == settings.bpm }?.id
         _uiState.update { state ->
             state.copy(
                 isPlaying = service.isPlaying.value,
                 bpm = settings.bpm,
                 volume = settings.volume,
                 sound = service.sound.value,
-                audioUsageType = settings.audioUsageType
+                audioUsageType = settings.audioUsageType,
+                presets = presets,
+                activePresetId = activeId,
             )
+        }
+    }
+
+    fun refreshPresets() {
+        viewModelScope.launch {
+            val settings = repository.settings.first()
+            val presets = settings.runningLevel.presets
+            val activeId = presets.find { it.bpm == settings.bpm }?.id
+            service?.setBpm(settings.bpm)
+            _uiState.update { it.copy(presets = presets, activePresetId = activeId, bpm = settings.bpm) }
         }
     }
 
@@ -101,7 +117,14 @@ class MetronomeViewModel @Inject constructor(
     fun setBpm(bpm: Float) {
         val bpmInt = bpm.toInt()
         service?.setBpm(bpmInt)
-        _uiState.update { it.copy(bpm = bpmInt) }
+        val activeId = _uiState.value.presets.find { it.bpm == bpmInt }?.id
+        _uiState.update { it.copy(bpm = bpmInt, activePresetId = activeId) }
+        scheduleSave()
+    }
+
+    fun setPreset(preset: Preset) {
+        service?.setBpm(preset.bpm)
+        _uiState.update { it.copy(bpm = preset.bpm, activePresetId = preset.id) }
         scheduleSave()
     }
 

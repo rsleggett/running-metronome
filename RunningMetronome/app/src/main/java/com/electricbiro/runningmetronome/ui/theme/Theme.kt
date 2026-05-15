@@ -1,44 +1,33 @@
 package com.electricbiro.runningmetronome.ui.theme
 
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.graphics.Color
 
-private val LightColorScheme = lightColorScheme(
-    primary = Indigo40,
-    onPrimary = Color.White,
-    primaryContainer = Indigo90,
-    onPrimaryContainer = Indigo10,
-    secondary = Coral40,
-    onSecondary = Color.White,
-    secondaryContainer = Coral90,
-    onSecondaryContainer = Coral20,
-)
-
-private val DarkColorScheme = darkColorScheme(
-    primary = Indigo80,
-    onPrimary = Indigo20,
-    primaryContainer = Indigo30,
-    onPrimaryContainer = Indigo90,
-    secondary = Coral80,
-    onSecondary = Coral20,
-    secondaryContainer = Coral30,
-    onSecondaryContainer = Coral90,
+private val AppColorScheme = darkColorScheme(
+    primary = Accent,
+    onPrimary = OnAccent,
+    primaryContainer = AccentSoft,
+    onPrimaryContainer = Accent,
+    secondary = Accent,
+    onSecondary = OnAccent,
+    secondaryContainer = BgElev,
+    onSecondaryContainer = TextPrimary,
+    background = BgBase,
+    onBackground = TextPrimary,
+    surface = BgBase,
+    onSurface = TextPrimary,
+    surfaceVariant = BgCard,
+    onSurfaceVariant = TextMute,
+    outline = LineStrong,
+    outlineVariant = LineBorder,
 )
 
 @Composable
-fun RunningMetronomeTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
-    content: @Composable () -> Unit
-) {
-    val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
-
+fun RunningMetronomeTheme(content: @Composable () -> Unit) {
     MaterialTheme(
-        colorScheme = colorScheme,
+        colorScheme = AppColorScheme,
         typography = Typography,
-        content = content
+        content = content,
     )
 }
