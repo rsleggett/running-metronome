@@ -28,8 +28,10 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -127,6 +129,8 @@ fun WelcomeScreen(onNext: () -> Unit, onSkip: () -> Unit) {
         modifier = Modifier
             .fillMaxSize()
             .background(BgBase)
+            .statusBarsPadding()
+            .navigationBarsPadding()
             .padding(horizontal = 24.dp),
     ) {
         // Radial accent glow at top-centre
@@ -281,8 +285,10 @@ fun LevelSelectScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(BgBase)
+            .statusBarsPadding()
+            .navigationBarsPadding()
             .padding(horizontal = 22.dp)
-            .padding(top = 14.dp, bottom = 22.dp),
+            .padding(top = 14.dp, bottom = 16.dp),
     ) {
         // Top bar
         TopBar(onBack = onBack, step = 0, totalSteps = 2)
@@ -439,8 +445,10 @@ fun PermissionScreen(onBack: () -> Unit, onFinish: () -> Unit) {
         modifier = Modifier
             .fillMaxSize()
             .background(BgBase)
+            .statusBarsPadding()
+            .navigationBarsPadding()
             .padding(horizontal = 22.dp)
-            .padding(top = 14.dp, bottom = 22.dp),
+            .padding(top = 14.dp, bottom = 16.dp),
     ) {
         TopBar(onBack = onBack, step = 1, totalSteps = 2)
 

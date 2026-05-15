@@ -74,4 +74,16 @@ class OnboardingViewModel @Inject constructor(
             else it.copy(tourStep = next)
         }
     }
+
+    fun resetOnboarding() {
+        viewModelScope.launch { repository.resetOnboarding() }
+        _state.update {
+            it.copy(
+                step = OnboardingStep.LEVEL_SELECT,
+                isComplete = false,
+                selectedLevel = null,
+                tourStep = 0,
+            )
+        }
+    }
 }

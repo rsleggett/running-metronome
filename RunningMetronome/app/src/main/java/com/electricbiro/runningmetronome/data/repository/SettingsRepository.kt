@@ -63,4 +63,10 @@ class SettingsRepository @Inject constructor(
             prefs[KEY_RUNNING_LEVEL] = level.id
         }
     }
+
+    suspend fun resetOnboarding() {
+        dataStore.edit { prefs ->
+            prefs[KEY_ONBOARDING_COMPLETE] = false
+        }
+    }
 }

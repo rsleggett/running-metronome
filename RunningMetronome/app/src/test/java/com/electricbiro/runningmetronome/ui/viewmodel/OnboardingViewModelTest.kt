@@ -220,4 +220,35 @@ class OnboardingViewModelTest {
         assertEquals(-1, vm.state.value.tourStep)
         assertTrue(vm.state.value.isComplete)
     }
+
+    // Reset onboarding
+
+    @Test
+    fun `resetOnboarding sets isComplete to false`() {
+        val vm = makeViewModel(onboardingComplete = true)
+        vm.resetOnboarding()
+        assertFalse(vm.state.value.isComplete)
+    }
+
+    @Test
+    fun `resetOnboarding navigates to LEVEL_SELECT`() {
+        val vm = makeViewModel(onboardingComplete = true)
+        vm.resetOnboarding()
+        assertEquals(OnboardingStep.LEVEL_SELECT, vm.state.value.step)
+    }
+
+    @Test
+    fun `resetOnboarding clears selectedLevel`() {
+        val vm = makeViewModel()
+        vm.selectLevel(RunningLevel.COMPETITIVE)
+        vm.resetOnboarding()
+        assertNull(vm.state.value.selectedLevel)
+    }
+
+    @Test
+    fun `resetOnboarding calls repository resetOnboarding`() = runTest {
+        val vm = makeViewModel()
+        vm.resetOnboarding()
+        verify(mockRepository).resetOnboarding()
+    }
 }

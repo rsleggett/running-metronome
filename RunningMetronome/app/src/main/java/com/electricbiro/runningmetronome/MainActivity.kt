@@ -24,8 +24,10 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -156,6 +158,7 @@ fun AppRoot(
                 viewModel = metronomeViewModel,
                 tourStep = onboardingState.tourStep,
                 onTourNext = onboardingViewModel::nextTourStep,
+                onChangeLevel = onboardingViewModel::resetOnboarding,
             )
         }
         else -> OnboardingScreen(viewModel = onboardingViewModel)
@@ -169,6 +172,7 @@ fun MainScreen(
     viewModel: MetronomeViewModel,
     tourStep: Int = -1,
     onTourNext: () -> Unit = {},
+    onChangeLevel: () -> Unit = {},
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
@@ -202,6 +206,8 @@ fun MainScreen(
                 .fillMaxSize()
                 .background(BgBase)
                 .verticalScroll(rememberScrollState())
+                .statusBarsPadding()
+                .navigationBarsPadding()
                 .padding(horizontal = 18.dp)
                 .padding(top = 10.dp, bottom = 20.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -247,11 +253,12 @@ fun MainScreen(
                     modifier = Modifier
                         .size(30.dp)
                         .clip(CircleShape)
-                        .border(1.dp, LineStrong, CircleShape),
+                        .border(1.dp, LineStrong, CircleShape)
+                        .clickable(onClick = onChangeLevel),
                 ) {
                     Icon(
                         imageVector = Icons.Filled.Settings,
-                        contentDescription = "Settings",
+                        contentDescription = "Change level",
                         tint = TextMute,
                         modifier = Modifier.size(14.dp),
                     )
