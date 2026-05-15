@@ -1,55 +1,57 @@
-# Running Metronome
+# Running Metronome (Cadence)
 
-A simple Android app that plays a metronome beat in the background while you listen to music or podcasts during your runs.
-
-## Overview
-
-A single-screen Android app designed to help runners maintain a consistent cadence. The metronome plays alongside other audio apps without interrupting your music or podcasts, giving you rhythmic guidance for your running pace.
+An Android app that plays a metronome beat alongside your music or podcasts to help you hold a consistent running cadence.
 
 ## Features
 
-- **Adjustable BPM**: 40–200 BPM range with a large numeric display and slider
-- **Quick Presets**: One-tap BPM presets at 160, 170, 175, 180, 185
-- **Volume Control**: Independent metronome volume (0–100%), separate from system volume
-- **One Sound Option**: Classic metronome click (additional sounds present in assets but UI currently exposes Classic only)
-- **Two Audio Modes**:
-  - **Media** (recommended for running): Always plays, uses media volume — works even on vibrate/silent
-  - **Notification**: Respects device mute switch, uses notification volume
-- **Background Playback**: Continues playing when screen is locked or using other apps via a foreground service with a persistent notification (play/pause control)
+- **First-run onboarding** — choose your running level (New / Casual / Regular / Competitive) to get six level-appropriate BPM presets tailored to your pace
+- **Level presets** — one-tap BPM chips tuned to your level (e.g. Competitive: Recovery 170 → Sprint 200); change level any time via the settings icon
+- **Adjustable BPM** — 130–210 range, large display, slider, and active preset tracking
+- **Volume control** — independent metronome volume (0–100%), separate from system volume
+- **Two audio modes**
+  - **Media** (recommended for running): always plays, uses media volume — works even on silent/vibrate
+  - **Notification**: respects hardware mute switch, uses notification volume
+- **Background playback** — foreground service with a persistent notification; play/pause control without opening the app
+- **Settings persistence** — BPM, volume, audio mode, and running level are saved across restarts via DataStore
+- **Notification permission** — requested in-app during onboarding with a clear explanation
 
 ## Tech Stack
 
 - **Language**: Kotlin
-- **UI**: Jetpack Compose with Material Design 3
+- **UI**: Jetpack Compose + Material Design 3 (dark-only theme)
 - **Architecture**: MVVM with Hilt dependency injection
 - **Audio**: SoundPool for low-latency playback
+- **Persistence**: Jetpack DataStore (Preferences)
 - **Async**: Kotlin Coroutines + StateFlow
 - **Build**: Gradle Kotlin DSL with Version Catalogs
-- **Min SDK**: Android 8.0 (API 26)
-- **Target SDK**: API 36
+- **Min SDK**: Android 8.0 (API 26) · **Target SDK**: API 36
 
 ## Development
 
-See [DEVELOPMENT.md](DEVELOPMENT.md) for setup instructions and architecture details.
+See [DEVELOPMENT.md](DEVELOPMENT.md) for setup, architecture details, and how to run the app.
 
 ## Status
 
-**Current Status**: ✅ Working MVP
+**Current Status**: ✅ Working MVP — tested on emulator (Pixel 9 Pro, API 36) and real device (OnePlus CPH2609, Android 16)
 
 ### What's implemented
-- Core metronome with live BPM changes (takes effect on the next beat)
-- Background playback with foreground service and notification play/pause control
-- Volume control and audio mode switching
-- MVVM architecture with Hilt DI
-- Custom app icon (indigo background, white metronome, coral pendulum)
-- ~50 unit tests passing
-- Settings persistence
-- Runtime notification permission request (Android 13+)
-- Named running-focused presets ("Easy Run", "Tempo Run", etc.)
+- Core metronome with live BPM changes (takes effect on next beat)
+- First-run onboarding (Welcome → Level Select → Permission) with animated transitions
+- Running level system — 4 levels × 6 presets each, persisted via DataStore
+- Settings persistence for BPM, volume, audio mode, and running level
+- Runtime notification permission request (Android 13+) wired into onboarding
+- Redesigned main screen — dark theme, large BPM ring with beat-pulse animation, 2×3 preset grid
+- Settings icon on main screen re-opens Level Select to change presets
+- 3-step coachmark tour on first launch after onboarding
+- Background playback with foreground service and notification play/pause
+- Custom app icon (indigo gradient, coral pendulum)
+- ~90 unit tests passing
 
 ### Not yet implemented
 - Release build configuration (signing, ProGuard)
 - Google Play Store listing
+- Sound selector UI (six sounds in `res/raw/`, Classic only exposed in the UI)
+- Lock screen / home screen widget controls
 
 ## License
 

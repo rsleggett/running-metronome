@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Running Metronome is an Android app that plays a metronome beat in the background while users listen to music or podcasts during runs. The app is designed to help runners maintain consistent cadence (160-180 BPM typical).
+Running Metronome (app name: **Cadence**) is an Android app that plays a metronome beat in the background while users listen to music or podcasts during runs. It helps runners maintain a consistent cadence (130–210 BPM range; typical running cadence 160–195 BPM).
 
 **Package**: `com.electricbiro.runningmetronome`
 **Min SDK**: API 26 (Android 8.0)
@@ -36,20 +36,16 @@ Running Metronome is an Android app that plays a metronome beat in the backgroun
 
 **Quick Start (Recommended):**
 ```bash
-# Use the helper script to build, install, and launch
 cd RunningMetronome
 ./run-app.sh
 ```
 
 **Manual Commands:**
 ```bash
-# Build and install
 ./gradlew installDebug
-
-# Launch the app
 adb shell am start -n com.electricbiro.runningmetronome/.MainActivity
 
-# Combined (build, install, and launch)
+# Or combined:
 ./gradlew installDebug && adb shell am start -n com.electricbiro.runningmetronome/.MainActivity
 ```
 
@@ -60,170 +56,159 @@ adb devices
 
 **Start an Emulator:**
 ```bash
-# List available emulators
 emulator -list-avds
-
-# Start an emulator
-emulator -avd Pixel_Fold_API_35 &
+emulator -avd Pixel_9_Pro &
 ```
 
 **View Logs:**
 ```bash
-# View all metronome logs
 adb logcat | grep -i metronome
-
-# View crash logs
 adb logcat | grep -E "AndroidRuntime|FATAL"
 ```
 
-For more details, see [RUNNING_THE_APP.md](RunningMetronome/RUNNING_THE_APP.md)
-
 ## Architecture
 
-This app uses **MVVM (Model-View-ViewModel)** with **Hilt** for dependency injection and **Jetpack Compose** for UI.
+MVVM with Hilt DI and Jetpack Compose UI. Single activity (`MainActivity`).
 
-### Layer Structure
+### Actual Project Structure
 
 ```
-data/          # Data models and repositories
-  model/       # Data classes (SettingsModel, enums)
-  repository/  # Data persistence via DataStore (planned)
-
-domain/        # Business logic layer (planned)
-  usecase/     # Use cases for metronome operations
-
-ui/            # Presentation layer
-  screen/      # Compose screens
-  component/   # Reusable UI components
-  theme/       # Material Design 3 theme
-
-audio/         # Audio playback logic
-  MetronomeAudioPlayer.kt - Core audio engine using SoundPool
-
-service/       # Background services
-  MetronomeService.kt - Foreground service for background playback
-
-di/            # Hilt dependency injection modules
-  AppModule.kt - Singleton providers
+RunningMetronome/app/src/main/java/com/electricbiro/runningmetronome/
+├── MainActivity.kt             # Activity + Compose host + service binding + AppRoot routing
+├── audio/
+│   └── MetronomeAudioPlayer.kt # SoundPool engine, BPM timing coroutine
+├── data/
+│   ├── model/
+│   │   ├── SettingsModel.kt    # MetronomeSoundEnum, AudioUsageType
+│   │   └── RunningLevel.kt     # RunningLevel enum (NEW/CASUAL/REGULAR/COMPETITIVE), Preset class
+│   └── repository/
+│       └── SettingsRepository.kt  # DataStore: bpm, volume, audioUsageType, runningLevel, onboardingComplete
+├── di/
+│   └── AppModule.kt            # Hilt providers: DataStore, SettingsRepository
+├── service/
+│   └── MetronomeService.kt     # Foreground service, notification, StateFlow state
+└── ui/
+    ├── onboarding/
+    │   └── OnboardingScreen.kt # WelcomeScreen, LevelSelectScreen, PermissionScreen + shared components
+    ├── theme/
+    │   ├── Color.kt            # Design tokens (Accent, BgBase/BgCard/BgElev, TextPrimary/Mute/Dim, etc.)
+    │   ├── Theme.kt            # Dark-only darkColorScheme — no light theme
+    │   └── Type.kt             # Typography scale (displayLarge 96sp BPM down to labelSmall 11sp)
+    └── viewmodel/
+        ├── MetronomeViewModel.kt   # MetronomeUiState, presets, activePresetId, delegates to service
+        └── OnboardingViewModel.kt  # OnboardingUiState, step state machine, tour steps, resetOnboarding
 ```
 
 ### Key Architecture Points
 
-1. **Hilt DI**: All activities and application class use `@AndroidEntryPoint` and `@HiltAndroidApp` annotations
-2. **Version Catalog**: Dependencies managed via `gradle/libs.versions.toml` with alias references
-3. **Jetpack Compose**: Full Compose UI (no XML layouts)
-4. **Material 3**: Using Material Design 3 components and theming
+1. **Hilt DI**: `@HiltAndroidApp` on Application, `@AndroidEntryPoint` on MainActivity, `@HiltViewModel` on both ViewModels
+2. **Version Catalog**: Dependencies in `gradle/libs.versions.toml`
+3. **Jetpack Compose**: Full Compose UI — no XML layouts
+4. **Dark-only theme**: No light theme. `RunningMetronomeTheme` always uses `darkColorScheme`
+5. **Edge-to-edge**: `enableEdgeToEdge()` in `onCreate`. All screens apply `statusBarsPadding()` and `navigationBarsPadding()`
+
+### Routing
+
+`AppRoot` composable routes based on `OnboardingUiState`:
+- `isLoading = true` → blank BgBase splash (DataStore loading)
+- `isComplete = false, step != APP` → `OnboardingScreen`
+- `step == APP, tourStep in 0..2` → `MainScreen` + `CoachmarkTour` overlay
+- `isComplete = true` → `MainScreen` (no tour)
+
+The settings cog on the main screen calls `OnboardingViewModel.resetOnboarding()` → routes user back to Level Select to change their running level.
+
+### Service is Source of Truth
+
+`MetronomeService` holds authoritative playback state as `StateFlow`. `MetronomeViewModel.bindService()` reads all state FROM the service. Persisted settings are applied via `applyPersistedSettings()` on bind — not pushed from the ViewModel directly.
+
+### Settings Persistence
+
+`SettingsRepository` uses DataStore Preferences to persist: `bpm`, `volume`, `audioUsageType`, `runningLevel`, `onboardingComplete`. The ViewModel stashes `pendingSettings` in `init` so they're available whether DataStore or service binding finishes first.
 
 ## Audio Implementation
 
-The metronome plays **alongside other audio** (music/podcasts) without ducking or interrupting:
-
-- Uses `SoundPool` for low-latency playback
-- Two audio modes selectable by user:
-  - **Media mode**: Uses `USAGE_MEDIA` - always plays, uses media volume
-  - **Notification mode**: Uses `USAGE_ASSISTANCE_SONIFICATION` - respects mute switch, uses notification volume
-- App-level volume control (0-100%)
-- Kotlin coroutines with delay for BPM-based timing (60000ms / BPM)
-- SoundPool handles audio latency automatically
-
-## Background Playback Requirements
-
-For Android 8.0+:
-
-- Must use **Foreground Service** with ongoing notification
-- Requires `FOREGROUND_SERVICE` permission in manifest
-- Handle audio focus to mix with other apps (don't duck music completely)
-- Implement notification controls for play/pause
-
-## Settings Persistence
-
-User preferences (BPM, volume, sound type) should persist using:
-
-- **DataStore** (androidx.datastore.preferences) - not SharedPreferences
-- Store as `Flow<Settings>` in repository
-- ViewModel collects and exposes as `StateFlow`
+- `SoundPool` for low-latency playback alongside other audio (no ducking)
+- BPM range: 130–210; live changes take effect on the next beat
+- Two user-selectable audio modes:
+  - **Media** (`USAGE_MEDIA`): always plays, media volume — recommended for running
+  - **Notification** (`USAGE_ASSISTANCE_SONIFICATION`): respects mute switch, notification volume
+- App-level volume 0–100%
+- Switching audio mode recreates the SoundPool
 
 ## Sound Files
 
 Six metronome sounds in `app/src/main/res/raw/`:
-- `metronomeclick.mp3` - Classic metronome click
-- `metronomesnare.mp3` - Snare drum sound
-- `metronomeknock.mp3` - Knock/wood block sound
-- `metronomedrumtr707.mp3` - TR-707 drum sound
-- `metronomedrumtr808.mp3` - TR-808 drum sound
-- `metronomedrumtr909.mp3` - TR-909 drum sound
+- `metronomeclick.mp3` — Classic (the only one currently exposed in the UI)
+- `metronomesnare.mp3`, `metronomeknock.mp3`, `metronomedrumtr707.mp3`, `metronomedrumtr808.mp3`, `metronomedrumtr909.mp3`
 
-Access via resource ID: `R.raw.metronomeclick`, etc.
-User can switch between sounds via FilterChip selector in UI.
+`MetronomeSoundEnum` defines all six. A sound-selector UI is not yet implemented.
 
 ## Current Implementation Status
 
-**Phase**: Feature-complete MVP (May 2026)
+**Phase**: Working MVP (May 2026) — tested on Pixel 9 Pro emulator and OnePlus CPH2609 (Android 16)
 
-### ✅ Implemented:
-- **Hilt DI**: Complete setup with `@HiltAndroidApp` and `@AndroidEntryPoint`
-- **Audio Playback**: `MetronomeAudioPlayer` using SoundPool
-  - BPM range: 130–210, live changes take effect on next beat
-  - Switchable audio modes (Media/Notification)
-  - Volume control (0–100%)
-- **Background Service**: `MetronomeService` foreground service
-  - Persistent notification with Play/Pause control (no Stop button)
-  - `ic_notification` music-note small icon, `ic_play`/`ic_pause` action icons
-  - Continues playing when app is minimized or screen is off
-  - MediaStyle notification; tapping notification brings existing activity to foreground (no duplicate back-stack)
-- **UI**: Material 3 Compose interface with indigo/coral brand colours (light + dark mode)
-  - Named running presets (Easy 160, Tempo 170, Race 175, Speed 180, Fast 185, Sprint 195) in 3×3 grid above slider
-  - BPM slider with large display (130–210)
-  - Volume slider with percentage display
-  - Audio mode selector (Media/Notification)
-  - Large Play/Pause FAB
-  - Scrollable layout
-- **Settings Persistence**: `SettingsRepository` wraps `DataStore<Preferences>`
-  - Persists BPM, volume, audio mode across app restarts
-  - 500ms debounce on saves; loaded and applied to service on bind
-  - `SettingsRepository` injected into `MetronomeViewModel` via Hilt
-- **MVVM**: `MetronomeViewModel` applies persisted settings to the service on bind; service is runtime source of truth for `isPlaying`
-- **Custom App Icon**: Indigo gradient background, white metronome body, coral/orange pendulum
-- **Permissions**: `POST_NOTIFICATIONS` requested at runtime on Android 13+ via `LaunchedEffect` in `MetronomeScreen`
-- **Testing**: ~54 unit tests passing
-  - `MetronomeAudioPlayerTest`: 32 tests (Robolectric)
-  - `MetronomeViewModelTest`: 22 tests with stubbed `SettingsRepository`
+### ✅ Implemented
 
-### ✅ Verified Working:
-- App runs on Pixel_9_Pro emulator and OnePlus real device
-- Audio playback working (cold boot required on first emulator use)
-- Live BPM changes work while playing
-- Notification play/pause syncs correctly with app UI
-- Settings persist across force-stop and relaunch
-- All unit tests passing
+- **Onboarding**: 3-screen first-run flow (Welcome → Level Select → Permission) with animated slide+fade transitions, `InfiniteTransition` pulsing rings on welcome, and `animateDpAsState` progress dots
+- **Running levels**: `RunningLevel` enum — NEW / CASUAL / REGULAR / COMPETITIVE, each with 6 `Preset(id, label, bpm)` entries tailored to that runner profile
+- **Settings persistence**: DataStore persists BPM, volume, audio mode, running level, and onboarding flag across app restarts
+- **Runtime notification permission**: Requested in `PermissionScreen` via `ActivityResultContracts.RequestPermission` (Android 13+ guard)
+- **Coachmark tour**: 3-step overlay on first main-screen open after onboarding (presets → tempo slider → play button), positioned using `LocalDensity` pixel-to-dp conversion
+- **Change level**: Settings cog on main screen calls `resetOnboarding()` → navigates back to Level Select
+- **Main screen**: Dark theme, 160dp BPM ring with beat-pulse animation (`animateFloatAsState` + `LaunchedEffect` coroutine), 2×3 preset chip grid, TEMPO slider, circular play button, VOLUME slider, AUDIO MODE cards
+- **Background service**: Foreground service with MediaStyle notification, play/pause action, `ic_notification` icon; tapping notification brings existing activity to foreground (no duplicate back-stack)
+- **MVVM**: `MetronomeViewModel` + `OnboardingViewModel` both `@HiltViewModel`
+- **Custom app icon**: Indigo gradient background, white metronome body, coral pendulum
+- **Testing**: ~90 unit tests passing
+  - `MetronomeAudioPlayerTest`: ~32 tests (Robolectric)
+  - `MetronomeViewModelTest`: ~30 tests (state sync, presets, activePresetId)
+  - `OnboardingViewModelTest`: ~22 tests (navigation, tour, resetOnboarding)
+  - `RunningLevelTest`: ~12 tests (fromId, preset invariants)
 
-### 🔄 Not Yet Implemented:
-- Release build configuration (signing, ProGuard, Play Store listing)
+### ✅ Verified Working (May 2026)
+
+- Full onboarding flow end-to-end on emulator and real device
+- Presets update correctly after changing running level
+- Settings (BPM, volume, level) persist across app restarts
+- Beat-pulse ring animation while playing
+- Notification play/pause syncs with app UI
+- Edge-to-edge layout on OnePlus virtual nav buttons and status bar
+
+### 🔄 Not Yet Implemented
+
+- Release build configuration (signing, ProGuard)
+- Sound selector UI (sounds exist in res/raw — just no UI)
+- Google Play Store listing
 
 ## Development Notes
 
 ### Gradle Configuration
-- Using Kotlin DSL with version catalog
-- kapt enabled for Hilt annotation processing
-- Compose compiler plugin via `kotlin-compose` plugin
-- Java 11 compatibility (sourceCompatibility/targetCompatibility)
+
+- Kotlin DSL with version catalog (`gradle/libs.versions.toml`)
+- KAPT for Hilt annotation processing (Kotlin 2.0 fallback warning is expected; migrate to KSP when Hilt support is stable)
+- `kotlin-compose` plugin for Compose compiler
+- Java 11 `sourceCompatibility`/`targetCompatibility`
 
 ### Testing
-- Unit tests: JUnit 4 in `app/src/test/`
-- Instrumented tests: AndroidJUnit + Espresso in `app/src/androidTest/`
-- Compose UI testing available via `androidx.compose.ui.test.junit4`
+
+- Unit tests: JUnit 4 + Mockito Kotlin in `app/src/test/`
+- `UnconfinedTestDispatcher` + `Dispatchers.setMain` for coroutine tests
+- `runTest` required for tests that `verify` suspend functions on mocks
+- Instrumented tests exist in `src/androidTest/` but are not maintained
 
 ### BPM Timing Precision
-Currently using Kotlin coroutines with `delay()` for timing (60000ms / BPM).
-If more precise timing needed, consider `ScheduledExecutorService`. Current implementation provides adequate precision for running cadence.
+
+Kotlin coroutines `delay()` with `60000ms / bpm`. Adequate for running cadence. For sub-millisecond precision a `ScheduledExecutorService` would be needed, but that's not required here.
 
 ### Battery Optimization
-- Service automatically starts/stops with playback
-- No wake locks used
-- Coroutine-based timing is battery efficient
-- SoundPool provides low-latency playback without continuous CPU usage
+
+- Service starts/stops with playback (no always-on process)
+- No wake locks
+- SoundPool + coroutine delay is efficient; minimal CPU between beats
 
 ### Known Issues & Solutions
-- **Mute Switch**: On real devices, notification mode respects hardware mute switch. Use Media mode for running to ensure sound plays even when phone is on vibrate.
-- **Sound Loading**: SoundPool loads sounds asynchronously. OnLoadCompleteListener confirms loading before playback.
-- **Service Lifecycle**: Service binds on MainActivity onCreate and unbinds on destroy. Service persists when app is minimized.
+
+- **Emulator audio**: Cold boot required if sound doesn't play on warm boot
+- **Mute switch**: Use Media mode for running — Notification mode respects the mute switch and will be silent on vibrate
+- **Sound loading**: SoundPool loads asynchronously; `OnLoadCompleteListener` confirms readiness before playback starts
+- **Service lifecycle**: Binds in `onCreate`, unbinds in `onDestroy`; persists when app is backgrounded
