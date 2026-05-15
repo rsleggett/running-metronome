@@ -92,8 +92,9 @@ class MetronomeViewModel @Inject constructor(
         viewModelScope.launch {
             val settings = repository.settings.first()
             val presets = settings.runningLevel.presets
-            val activeId = presets.find { it.bpm == _uiState.value.bpm }?.id
-            _uiState.update { it.copy(presets = presets, activePresetId = activeId) }
+            val activeId = presets.find { it.bpm == settings.bpm }?.id
+            service?.setBpm(settings.bpm)
+            _uiState.update { it.copy(presets = presets, activePresetId = activeId, bpm = settings.bpm) }
         }
     }
 

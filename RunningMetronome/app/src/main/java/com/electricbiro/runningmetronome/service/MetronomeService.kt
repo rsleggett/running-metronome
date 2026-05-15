@@ -125,7 +125,7 @@ class MetronomeService : Service() {
         )
 
         return NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle("Running Metronome")
+            .setContentTitle("RunTick")
             .setContentText("${_bpm.value} BPM - ${_sound.value.name.lowercase().replaceFirstChar { it.uppercase() }}")
             .setSmallIcon(R.drawable.ic_notification)
             .setContentIntent(contentIntent)

@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Running Metronome (app name: **Cadence**) is an Android app that plays a metronome beat in the background while users listen to music or podcasts during runs. It helps runners maintain a consistent cadence (130–210 BPM range; typical running cadence 160–195 BPM).
+**RunTick** is an Android app that plays a metronome beat in the background while users listen to music or podcasts during runs. It helps runners maintain a consistent cadence (130–210 BPM range; typical running cadence 160–195 BPM).
 
 **Package**: `com.electricbiro.runningmetronome`
 **Min SDK**: API 26 (Android 8.0)

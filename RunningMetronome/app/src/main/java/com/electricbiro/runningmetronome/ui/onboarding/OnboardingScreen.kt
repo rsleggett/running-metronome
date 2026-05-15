@@ -38,7 +38,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.DirectionsRun
 import androidx.compose.material.icons.filled.EmojiEvents
@@ -59,6 +58,8 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
+import com.electricbiro.runningmetronome.R
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
@@ -254,7 +255,7 @@ private fun PulsingRings() {
             )
         }
 
-        // Central filled circle with bolt
+        // Central filled circle with metronome icon
         Box(
             contentAlignment = Alignment.Center,
             modifier = Modifier
@@ -263,7 +264,7 @@ private fun PulsingRings() {
                 .background(Accent),
         ) {
             Icon(
-                imageVector = Icons.Filled.Bolt,
+                painter = painterResource(R.drawable.ic_metronome_ui),
                 contentDescription = null,
                 tint = OnAccent,
                 modifier = Modifier.size(28.dp),
@@ -544,7 +545,7 @@ private fun FauxNotification() {
         horizontalArrangement = Arrangement.spacedBy(10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        // Bolt tile
+        // Metronome icon tile
         Box(
             contentAlignment = Alignment.Center,
             modifier = Modifier
@@ -553,7 +554,7 @@ private fun FauxNotification() {
                 .background(Accent),
         ) {
             Icon(
-                imageVector = Icons.Filled.Bolt,
+                painter = painterResource(R.drawable.ic_metronome_ui),
                 contentDescription = null,
                 tint = OnAccent,
                 modifier = Modifier.size(14.dp),
@@ -562,7 +563,7 @@ private fun FauxNotification() {
 
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = "CADENCE",
+                text = "RUNTICK",
                 color = TextDim,
                 style = MaterialTheme.typography.labelSmall.copy(
                     fontSize = 11.sp,

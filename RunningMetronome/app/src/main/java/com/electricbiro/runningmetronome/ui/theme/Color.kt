@@ -2,7 +2,7 @@ package com.electricbiro.runningmetronome.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-// Design tokens — Running Metronome brand
+// Design tokens — RunTick brand
 val Accent       = Color(0xFFFF5A1F)
 val AccentSoft   = Color(0x29FF5A1F) // accent @ 16 %
 val AccentRim    = Color(0x59FF5A1F) // accent @ 35 %

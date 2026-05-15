@@ -36,7 +36,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Settings
@@ -51,6 +50,8 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.res.painterResource
+import com.electricbiro.runningmetronome.R
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -239,14 +240,14 @@ fun MainScreen(
                             .background(Accent),
                     ) {
                         Icon(
-                            imageVector = Icons.Filled.Bolt,
+                            painter = painterResource(R.drawable.ic_metronome_ui),
                             contentDescription = null,
                             tint = OnAccent,
                             modifier = Modifier.size(14.dp),
                         )
                     }
                     Text(
-                        text = "CADENCE",
+                        text = "RUNTICK",
                         color = TextPrimary,
                         style = MaterialTheme.typography.labelSmall.copy(
                             letterSpacing = 0.4.sp,

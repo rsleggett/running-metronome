@@ -1,4 +1,4 @@
-# Running Metronome (Cadence)
+# RunTick
 
 An Android app that plays a metronome beat alongside your music or podcasts to help you hold a consistent running cadence.
 

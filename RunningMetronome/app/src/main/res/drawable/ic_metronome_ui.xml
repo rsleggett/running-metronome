@@ -1,0 +1,25 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+
+    <!-- Metronome body (trapezoid, wider at base) -->
+    <path
+        android:fillColor="#FF000000"
+        android:pathData="M5,12 L19,12 L22,23 L2,23 Z"/>
+
+    <!-- Pendulum rod (swung right) -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#FF000000"
+        android:strokeWidth="2"
+        android:strokeLineCap="round"
+        android:pathData="M12,12 L17,2"/>
+
+    <!-- Tempo weight block on pendulum -->
+    <path
+        android:fillColor="#FF000000"
+        android:pathData="M13.5,5.5 L17.5,5.5 L17.5,7.5 L13.5,7.5 Z"/>
+
+</vector>

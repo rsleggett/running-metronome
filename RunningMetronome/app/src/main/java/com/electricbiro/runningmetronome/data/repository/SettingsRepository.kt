@@ -61,6 +61,7 @@ class SettingsRepository @Inject constructor(
         dataStore.edit { prefs ->
             prefs[KEY_ONBOARDING_COMPLETE] = true
             prefs[KEY_RUNNING_LEVEL] = level.id
+            prefs[KEY_BPM] = level.presets[1].bpm
         }
     }
 
