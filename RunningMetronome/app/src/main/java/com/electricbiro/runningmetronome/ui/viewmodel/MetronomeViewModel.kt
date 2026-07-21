@@ -41,6 +41,7 @@ class MetronomeViewModel @Inject constructor(
     private var service: MetronomeService? = null
     private var pendingSettings: PersistedSettings? = null
     private var saveJob: Job? = null
+    private var serviceCollectJob: Job? = null
 
     init {
         viewModelScope.launch {
@@ -65,6 +66,13 @@ class MetronomeViewModel @Inject constructor(
                     sound = service.sound.value,
                     audioUsageType = service.audioUsageType.value,
                 )
+            }
+        }
+        // Mirror service playback state so notification controls stay in sync with the UI
+        serviceCollectJob?.cancel()
+        serviceCollectJob = viewModelScope.launch {
+            service.isPlaying.collect { playing ->
+                _uiState.update { it.copy(isPlaying = playing) }
             }
         }
     }
@@ -99,6 +107,8 @@ class MetronomeViewModel @Inject constructor(
     }
 
     fun unbindService() {
+        serviceCollectJob?.cancel()
+        serviceCollectJob = null
         service = null
     }
 
@@ -152,13 +162,7 @@ class MetronomeViewModel @Inject constructor(
         saveJob = viewModelScope.launch {
             delay(500)
             val state = _uiState.value
-            repository.save(
-                PersistedSettings(
-                    bpm = state.bpm,
-                    volume = state.volume,
-                    audioUsageType = state.audioUsageType,
-                )
-            )
+            repository.savePlaybackSettings(state.bpm, state.volume, state.audioUsageType)
         }
     }
 }
