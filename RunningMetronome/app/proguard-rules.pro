@@ -1,21 +1,31 @@
-# Add project specific ProGuard rules here.
-# You can control the set of applied configuration files using the
-# proguardFiles setting in build.gradle.
-#
-# For more details, see
-#   http://developer.android.com/guide/developing/tools/proguard.html
+# Preserve line numbers in stack traces
+-keepattributes SourceFile,LineNumberTable
+-renamesourcefileattribute SourceFile
 
-# If your project uses WebView with JS, uncomment the following
-# and specify the fully qualified class name to the JavaScript interface
-# class:
-#-keepclassmembers class fqcn.of.javascript.interface.for.webview {
-#   public *;
-#}
+# Hilt — keep generated component classes
+-keep class dagger.hilt.** { *; }
+-keep class * extends dagger.hilt.android.internal.managers.ActivityComponentManager { *; }
+-keepclasseswithmembers class * {
+    @dagger.hilt.android.AndroidEntryPoint <init>(...);
+}
 
-# Uncomment this to preserve the line number information for
-# debugging stack traces.
-#-keepattributes SourceFile,LineNumberTable
+# DataStore — keep Preferences serialization
+-keepclassmembers class androidx.datastore.preferences.protobuf.** { *; }
 
-# If you keep the line number information, uncomment this to
-# hide the original source file name.
-#-renamesourcefileattribute SourceFile
+# Kotlin coroutines
+-keepclassmembernames class kotlinx.** {
+    volatile <fields>;
+}
+
+# Keep enums intact (RunningLevel, AudioUsageType, MetronomeSoundEnum)
+-keepclassmembers enum * {
+    public static **[] values();
+    public static ** valueOf(java.lang.String);
+}
+
+# Keep the foreground service
+-keep class com.electricbiro.runningmetronome.service.MetronomeService { *; }
+
+# Prevent stripping of Compose internals needed at runtime
+-keep class androidx.compose.** { *; }
+-dontwarn androidx.compose.**
