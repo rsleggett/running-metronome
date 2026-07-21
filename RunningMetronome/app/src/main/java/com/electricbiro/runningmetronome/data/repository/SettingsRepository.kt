@@ -57,6 +57,14 @@ class SettingsRepository @Inject constructor(
         }
     }
 
+    suspend fun savePlaybackSettings(bpm: Int, volume: Int, audioUsageType: AudioUsageType) {
+        dataStore.edit { prefs ->
+            prefs[KEY_BPM] = bpm
+            prefs[KEY_VOLUME] = volume
+            prefs[KEY_AUDIO_USAGE_TYPE] = audioUsageType.name
+        }
+    }
+
     suspend fun completeOnboarding(level: RunningLevel) {
         dataStore.edit { prefs ->
             prefs[KEY_ONBOARDING_COMPLETE] = true
